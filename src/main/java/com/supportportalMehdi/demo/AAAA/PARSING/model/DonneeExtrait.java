@@ -10,17 +10,13 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DonneeExtrait {
 
-//    @Field("id")
-//    private ObjectId id;
-
-//    @Id
-//    private ObjectId id;
     @Field("dateDonneeExtrait")
     private Date dateDonneeExtrait;
 
@@ -30,11 +26,17 @@ public class DonneeExtrait {
     @Field("operations")
     private String operations;
 
-
     @Field("debit")
     private Double debit;
 
     @Field("credit")
     private Double credit;
+
+
+    @Field("commentairesFactures")
+    private HashMap<String, String> commentairesFactures;
+
+    @Field("valide")
+    private boolean valide;
 
 }
