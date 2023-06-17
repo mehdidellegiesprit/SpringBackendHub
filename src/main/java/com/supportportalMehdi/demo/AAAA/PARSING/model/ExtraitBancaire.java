@@ -3,15 +3,21 @@ package com.supportportalMehdi.demo.AAAA.PARSING.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExtraitBancaire {
+    // nouveau  champ
+    @Field("uuid")
+    private UUID uuid = UUID.randomUUID();
 
     @Field("dateExtrait")
     private Date dateExtrait;

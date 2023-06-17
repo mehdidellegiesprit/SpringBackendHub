@@ -100,6 +100,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                 .collect(Collectors.toList());
     }
 
+    // updateReleveBancaire is not good developped
     @Override
     public ReleveBancaireDto updateReleveBancaire(ReleveBancaireDto releveBancaireDto) {
         Optional<ReleveBancaire> existingReleveBancaire = Optional.ofNullable(ReleveBancaireDto.toEntity(releveBancaireDto));
@@ -358,11 +359,14 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                         System.out.println("\n............................................................\n");
 
                         donneeExtrait.setOperations(liste_opertation);
-                        // facture
-                        HashMap<String, String> commentairesFactures = new HashMap<>();
-                        boolean valide = false;
-                        donneeExtrait.setCommentairesFactures(commentairesFactures);
-                        donneeExtrait.setValide(valide);
+                        // factures
+                        donneeExtrait.setFactures(new ArrayList<>());
+                        donneeExtrait.setCommentairesFactures(new HashMap<>());
+                        donneeExtrait.setValide(false);
+
+
+
+
                         //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
                         System.out.println(donneeExtraits);
                         //ahne lezemna nda5ouha lel base
@@ -409,11 +413,10 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
                     donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
                     donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
-                    /// facture 2!!
-                    HashMap<String, String> commentairesFactures = new HashMap<>();
-                    boolean valide = false;
-                    donneeExtrait.setCommentairesFactures(commentairesFactures);
-                    donneeExtrait.setValide(valide);
+                    // factures
+                    donneeExtrait.setFactures(new ArrayList<>());
+                    donneeExtrait.setCommentairesFactures(new HashMap<>());
+                    donneeExtrait.setValide(false);
 
                     if (position!=-1){
                         if (position<positionMax){

@@ -8,14 +8,15 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DonneeExtrait {
+    // nouveau  champ
+    @Field("uuid")
+    private UUID uuid = UUID.randomUUID();
 
     @Field("dateDonneeExtrait")
     private Date dateDonneeExtrait;
@@ -32,9 +33,12 @@ public class DonneeExtrait {
     @Field("credit")
     private Double credit;
 
+    @Field("factures")
+    private List<String> factures;
 
     @Field("commentairesFactures")
-    private HashMap<String, String> commentairesFactures;
+    HashMap<String, String> commentairesFactures = new HashMap<>();
+
 
     @Field("valide")
     private boolean valide;
