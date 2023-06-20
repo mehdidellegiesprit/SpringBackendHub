@@ -4,6 +4,8 @@ package com.supportportalMehdi.demo.AAAA.PARSING.controller;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.controller.api.ReleveBancaireApi;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.FactureData;
 import com.supportportalMehdi.demo.AAAA.PARSING.services.ReleveBancaireService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,4 +37,21 @@ public class ReleveBancaireController implements ReleveBancaireApi {
     public ResponseEntity<List<ReleveBancaireDto>> getAllRelevesBancaires() {
         return ResponseEntity.ok(releveBancaireService.getAllReleveBancaires());
     }
+
+    @Override
+    public ResponseEntity<ReleveBancaireDto> AddFactureComment(DonneeExtrait data) {
+        return ResponseEntity.ok(releveBancaireService.AddFactureToDonneeExtrait(data));
+    }
+
+    @Override
+    public ResponseEntity<ReleveBancaireDto> updateCommentaireFacture(DonneeExtrait data) {
+        return ResponseEntity.ok(releveBancaireService.updateCommentaireFactureToDonneeExtrait(data));
+    }
+
+    @Override
+    public ResponseEntity<ReleveBancaireDto> deleteFacture(FactureData factureData) {
+        return ResponseEntity.ok(releveBancaireService.deleteFacture(factureData.getFacture(), factureData.getData()));
+    }
+
+
 }

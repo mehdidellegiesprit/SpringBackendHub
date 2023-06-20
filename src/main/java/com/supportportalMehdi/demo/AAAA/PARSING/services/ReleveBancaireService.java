@@ -1,6 +1,7 @@
 package com.supportportalMehdi.demo.AAAA.PARSING.services;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
 import org.bson.types.ObjectId;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,4 +19,9 @@ public interface ReleveBancaireService {
     void deleteReleveBancaire(ObjectId id) ;
     ReleveBancaireDto parseAndExtract(MultipartFile file) throws IOException, ParseException;
 
+    ReleveBancaireDto AddFactureToDonneeExtrait(DonneeExtrait data);
+
+    ReleveBancaireDto updateCommentaireFactureToDonneeExtrait(DonneeExtrait data);
+
+    ReleveBancaireDto deleteFacture(String facture,DonneeExtrait data);
 }

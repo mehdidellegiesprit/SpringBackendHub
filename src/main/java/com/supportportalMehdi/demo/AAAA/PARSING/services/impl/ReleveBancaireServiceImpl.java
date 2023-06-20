@@ -198,6 +198,107 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         return null ;
     }
 
+    @Override
+    public ReleveBancaireDto AddFactureToDonneeExtrait(DonneeExtrait data) {
+        // Trouver le ReleveBancaire contenant le DonneeExtrait à mettre à jour
+        ReleveBancaire releveBancaire = releveBancaireRepository.findWithDonneeExtrait(data.getUuid());
+
+        if (releveBancaire != null) {
+            // Parcourir la liste des ExtraitBancaire et leur liste de DonneeExtrait pour trouver le bon à mettre à jour
+            for (ExtraitBancaire extrait : releveBancaire.getExtraits()) {
+                for (DonneeExtrait donneeExtrait : extrait.getDonneeExtraits()) {
+                    if (donneeExtrait.getUuid().equals(data.getUuid())) {
+                        // Mise à jour de l'objet DonneeExtrait
+                        donneeExtrait.setDateDonneeExtrait(data.getDateDonneeExtrait());
+                        donneeExtrait.setDateValeurDonneeExtrait(data.getDateValeurDonneeExtrait());
+                        donneeExtrait.setOperations(data.getOperations());
+                        donneeExtrait.setDebit(data.getDebit());
+                        donneeExtrait.setCredit(data.getCredit());
+                        donneeExtrait.setFactures(data.getFactures());
+                        donneeExtrait.setCommentairesFactures(data.getCommentairesFactures());
+                        donneeExtrait.setValide(data.isValide());
+
+                        // Enregistrement de l'objet ReleveBancaire mis à jour
+                        ReleveBancaire updatedReleveBancaire = releveBancaireRepository.save(releveBancaire);
+
+                        // Conversion de l'objet ReleveBancaire en ReleveBancaireDto
+                        return ReleveBancaireDto.fromEntity(updatedReleveBancaire);
+                    }
+                }
+            }
+        }
+
+        // Si aucun DonneeExtrait correspondant n'a été trouvé, retourner null ou gérer l'erreur comme vous le souhaitez
+        return null;
+    }
+
+    @Override
+    public ReleveBancaireDto updateCommentaireFactureToDonneeExtrait(DonneeExtrait data) {
+        // Trouver le ReleveBancaire contenant le DonneeExtrait à mettre à jour
+        ReleveBancaire releveBancaire = releveBancaireRepository.findWithDonneeExtrait(data.getUuid());
+
+        if (releveBancaire != null) {
+            // Parcourir la liste des ExtraitBancaire et leur liste de DonneeExtrait pour trouver le bon à mettre à jour
+            for (ExtraitBancaire extrait : releveBancaire.getExtraits()) {
+                for (DonneeExtrait donneeExtrait : extrait.getDonneeExtraits()) {
+                    if (donneeExtrait.getUuid().equals(data.getUuid())) {
+                        // Mise à jour de l'objet DonneeExtrait
+                        donneeExtrait.setDateDonneeExtrait(data.getDateDonneeExtrait());
+                        donneeExtrait.setDateValeurDonneeExtrait(data.getDateValeurDonneeExtrait());
+                        donneeExtrait.setOperations(data.getOperations());
+                        donneeExtrait.setDebit(data.getDebit());
+                        donneeExtrait.setCredit(data.getCredit());
+                        donneeExtrait.setFactures(data.getFactures());
+                        donneeExtrait.setCommentairesFactures(data.getCommentairesFactures());
+                        donneeExtrait.setValide(data.isValide());
+
+                        // Enregistrement de l'objet ReleveBancaire mis à jour
+                        ReleveBancaire updatedReleveBancaire = releveBancaireRepository.save(releveBancaire);
+
+                        // Conversion de l'objet ReleveBancaire en ReleveBancaireDto
+                        return ReleveBancaireDto.fromEntity(updatedReleveBancaire);
+                    }
+                }
+            }
+        }
+
+        // Si aucun DonneeExtrait correspondant n'a été trouvé, retourner null ou gérer l'erreur comme vous le souhaitez
+        return null;
+    }
+
+    @Override
+    public ReleveBancaireDto deleteFacture(String facture, DonneeExtrait data) {
+        // Fetch the specific ReleveBancaire that contains the DonneeExtrait with the specified UUID
+        ReleveBancaire releveBancaire = releveBancaireRepository.findWithDonneeExtrait(data.getUuid());
+
+        if (releveBancaire != null) {
+            for (ExtraitBancaire extrait : releveBancaire.getExtraits()) {
+                for (DonneeExtrait donneeExtrait : extrait.getDonneeExtraits()) {
+                    // Find the DonneeExtrait instance with the specified UUID
+                    if (donneeExtrait.getUuid().equals(data.getUuid())) {
+                        // If the facture is present in the list, remove it
+                        if (donneeExtrait.getFactures().contains(facture)) {
+                            donneeExtrait.getFactures().remove(facture);
+
+                            // If a commentaire for this facture exists, remove it
+                            if (donneeExtrait.getCommentairesFactures().containsKey(facture)) {
+                                donneeExtrait.getCommentairesFactures().remove(facture);
+                            }
+                        }
+                    }
+                }
+            }
+            // Save the modified ReleveBancaire back to the repository
+            ReleveBancaire updatedReleveBancaire = releveBancaireRepository.save(releveBancaire);
+            // Conversion de l'objet ReleveBancaire en ReleveBancaireDto
+            return ReleveBancaireDto.fromEntity(updatedReleveBancaire);
+        }
+
+        // In this case, return null or transform your ReleveBancaire object into ReleveBancaireDto object
+        // and return it as per your requirement.
+        return null;
+    }
+
     public void  extractListeOperationFromCicBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {
         int positionMax = util.getChaineMaxEspace().length() - util.getMaxEspaces() - 1 ;
         //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";

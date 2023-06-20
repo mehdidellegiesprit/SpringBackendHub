@@ -1,11 +1,11 @@
 package com.supportportalMehdi.demo.AAAA.PARSING.controller.api;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.FactureData;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,6 +20,18 @@ public interface ReleveBancaireApi {
 
     @GetMapping(value=APP_ROOT+"/AllRelevesBancaires",produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<ReleveBancaireDto>> getAllRelevesBancaires();
+
+    @PostMapping(value=APP_ROOT+"/facture/add",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReleveBancaireDto> AddFactureComment(@RequestBody DonneeExtrait data) ;
+
+
+    @PostMapping(value=APP_ROOT+"/facture/commentaire/update",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReleveBancaireDto> updateCommentaireFacture(@RequestBody DonneeExtrait data) ;
+
+    @PostMapping(value = APP_ROOT + "/facture/delete")
+    ResponseEntity<ReleveBancaireDto> deleteFacture(@RequestBody FactureData factureData);
+
+
 
 
 }
