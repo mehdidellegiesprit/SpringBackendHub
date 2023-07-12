@@ -39,8 +39,9 @@ public class DonneeExtrait {
     @Field("commentairesFactures")
     HashMap<String, String> commentairesFactures = new HashMap<>();
 
-
     @Field("valide")
     private boolean valide;
 
+    @Field("associationTitreUrl")
+    HashMap<String, String> associationTitreUrl = new HashMap<>();
 }

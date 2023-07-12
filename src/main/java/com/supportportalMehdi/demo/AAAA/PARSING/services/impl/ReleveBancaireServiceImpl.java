@@ -216,6 +216,8 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                         donneeExtrait.setCredit(data.getCredit());
                         donneeExtrait.setFactures(data.getFactures());
                         donneeExtrait.setCommentairesFactures(data.getCommentairesFactures());
+                        //new added
+                        donneeExtrait.setAssociationTitreUrl(data.getAssociationTitreUrl());
                         donneeExtrait.setValide(data.isValide());
 
                         // Enregistrement de l'objet ReleveBancaire mis à jour
@@ -283,6 +285,9 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                             // If a commentaire for this facture exists, remove it
                             if (donneeExtrait.getCommentairesFactures().containsKey(facture)) {
                                 donneeExtrait.getCommentairesFactures().remove(facture);
+                            }
+                            if (donneeExtrait.getAssociationTitreUrl().containsKey(facture)) {
+                                donneeExtrait.getAssociationTitreUrl().remove(facture);
                             }
                         }
                     }
