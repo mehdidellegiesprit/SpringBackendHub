@@ -123,80 +123,74 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
     @Override
     public ReleveBancaireDto parseAndExtract(MultipartFile file) throws IOException, ParseException {
-        boolean ok = false ;
-        //ok=this.ExisteFileDocument(file2copied);
+        boolean ok = false;
         ok=this.ExisteFileDocument(file);
-        System.out.println("okok="+ok);
 
-        if (ok){
+        if (ok) {
             System.out.println("Impossible===========");
             throw new InvalidOperationException("Impossible de parser un fichier deja Traiteé !!!!!!! ",
-                    ErrorCodes.FILE_ALREADY_IN_USE) ;
+                    ErrorCodes.FILE_ALREADY_IN_USE);
         }
-        if (ok == false){
+        if (!ok){
+            try {
+                String pathFileUploaded  = getPathFileUploaded(file);
+                System.out.println("pathFileUploaded="+"*"+pathFileUploaded+"*");
 
-             try {
-                 String pathFileUploaded  = getPathFileUploaded(file); // TODO haw haw
-                 // Print the uploaded file path
-                 System.out.println("pathFileUploaded="+"*"+pathFileUploaded+"*");
+                String nameBank  = findNameBank(pathFileUploaded);
+                System.out.println("nameBank="+"*"+nameBank+"*");
+                ReleveBancaireDto releveBancaireDto = new ReleveBancaireDto();
 
-                 String nameBank  = findNameBank(pathFileUploaded) ;
-                 System.out.println("nameBank="+"*"+nameBank+"*");
-                 ReleveBancaireDto releveBancaireDto = new ReleveBancaireDto() ;
+                Util util = new Util();
+                if (nameBank.contains("CIC")){
+                    extractDataFromCicBank(util,pathFileUploaded);
+                    extractListeOperationFromCicBank(releveBancaireDto, util,pathFileUploaded);
+                    System.out.println(releveBancaireDto);
+                    releveBancaireDto.setNomBank("CIC");
 
-                 Util util = new Util() ;
-                 if (nameBank.contains("CIC")){  // on peut ajouter d'autres conditions
-                     extractDataFromCicBank(util,pathFileUploaded);
-                     extractListeOperationFromCicBank(releveBancaireDto, util,pathFileUploaded);
-                     System.out.println(releveBancaireDto);
-                     releveBancaireDto.setNomBank("CIC");
-                     SocieteDto societeDto = societeService.createSociete(new SocieteDto(util.getNameSociete()));
-                     releveBancaireDto.setId_societe(societeDto.getId());
-                     releveBancaireDto.setNameFile(file.getOriginalFilename());
+                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
+                    releveBancaireDto.setId_societe(societeDto.getId());
+                    releveBancaireDto.setNameFile(file.getOriginalFilename());
 
+                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
+                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
+                    releveBancaireDto.setDataFileContent(base64String);
 
-                     /// debut L'enregistrement dans du fichier sous la forme base 64
-                     FileInputStream inputStream = new FileInputStream(pathFileUploaded);
-                     String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                     releveBancaireDto.setDataFileContent(base64String);
-                     /// fin L'enregistrement dans du fichier sous la forme base 64
+                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
+                    releveBancaireDto.setNom_societe(util.getNameSociete());
 
+                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
+                }
+                if (nameBank.contains("BP")){
+                    extractDataFromPopBank(util,pathFileUploaded);
+                    System.out.println("nom_societe"+util.getNameSociete());
+                    System.out.println("chaine_max_espace"+util.getChaineMaxEspace());
+                    System.out.println("max_espace"+util.getMaxEspaces());
+                    extractListeOperationFromPopBank(releveBancaireDto, util,pathFileUploaded);
+                    System.out.println(releveBancaireDto);
+                    releveBancaireDto.setNomBank("BP");
+                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
+                    releveBancaireDto.setId_societe(societeDto.getId());
+                    releveBancaireDto.setNameFile(file.getOriginalFilename());
 
+                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
+                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
+                    releveBancaireDto.setDataFileContent(base64String);
 
-                     releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
-                     return releveBancaireDto ;
-                 }
-                 if (nameBank.contains("BP")){ // on peut ajouter d'autres conditions
-                     extractDataFromPopBank(util,pathFileUploaded);
-                     System.out.println("nom_societe"+util.getNameSociete());
-                     System.out.println("chaine_max_espace"+util.getChaineMaxEspace());
-                     System.out.println("max_espace"+util.getMaxEspaces());
-                     extractListeOperationFromPopBank(releveBancaireDto, util,pathFileUploaded);
-                     System.out.println(releveBancaireDto);
-                     releveBancaireDto.setNomBank("BP");
-                     SocieteDto societeDto = societeService.createSociete(new SocieteDto(util.getNameSociete()));
-                     releveBancaireDto.setId_societe(societeDto.getId());
-                     releveBancaireDto.setNameFile(file.getOriginalFilename());
+                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
+                    releveBancaireDto.setNom_societe(util.getNameSociete());
 
-                     /// debut L'enregistrement dans du fichier sous la forme base 64
-                     FileInputStream inputStream = new FileInputStream(pathFileUploaded);
-                     String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                     releveBancaireDto.setDataFileContent(base64String);
-                     /// fin L'enregistrement dans du fichier sous la forme base 64
-
-                     releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
-                     return releveBancaireDto ;
-                 }
-
-             }
-             catch (IOException e) {
-                 System.out.println("Failed to delete temporary file: " + e.getMessage());
-                 throw new InvalidOperationException("Impossible de parser un fichier deja en traitement",
-                         ErrorCodes.FILE_ALREADY_IN_USE) ;
-             }
-             }
-        return null ;
+                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
+                }
+                // le nom de  la societe
+            } catch (IOException e) {
+                System.out.println("Failed to delete temporary file: " + e.getMessage());
+                throw new InvalidOperationException("Impossible de parser un fichier deja en traitement",
+                        ErrorCodes.FILE_ALREADY_IN_USE);
+            }
+        }
+        return null;
     }
+
 
     @Override
     public ReleveBancaireDto AddFactureToDonneeExtrait(DonneeExtrait data) {

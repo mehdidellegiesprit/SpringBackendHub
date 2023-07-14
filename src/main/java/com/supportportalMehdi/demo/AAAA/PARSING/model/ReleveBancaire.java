@@ -31,4 +31,6 @@ public class ReleveBancaire {
     @Field("dataFileContent")
     private String dataFileContent;
 
+    private String nom_societe;
+
 }

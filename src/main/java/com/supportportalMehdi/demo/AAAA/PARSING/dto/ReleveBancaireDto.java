@@ -22,7 +22,7 @@ public class ReleveBancaireDto {
     private String iban;
     private String nameFile;
     private String dataFileContent;
-
+    private String nom_societe;
 
     public static ReleveBancaireDto fromEntity (ReleveBancaire releveBancaire){
 
@@ -37,6 +37,7 @@ public class ReleveBancaireDto {
                 .iban(releveBancaire.getIban())
                 .nameFile(releveBancaire.getIban())
                 .dataFileContent(releveBancaire.getDataFileContent())
+                .nom_societe(releveBancaire.getNom_societe())
                 .build();
     }
     public static ReleveBancaire toEntity (ReleveBancaireDto releveBancaireDto){
@@ -51,6 +52,7 @@ public class ReleveBancaireDto {
         releveBancaire.setIban(releveBancaireDto.getIban());
         releveBancaire.setNameFile(releveBancaireDto.getNameFile());
         releveBancaire.setDataFileContent(releveBancaireDto.getDataFileContent());
+        releveBancaire.setNom_societe(releveBancaireDto.getNom_societe());
         return releveBancaire;
     }
 }
