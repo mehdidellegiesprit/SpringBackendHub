@@ -1,5 +1,6 @@
 package com.supportportalMehdi.demo.AAAA.PARSING.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,6 +30,7 @@ public class ReleveBancaire {
     @Field("nameFile")
     private String nameFile;
     @Field("dataFileContent")
+    @JsonIgnore
     private String dataFileContent;
 
     private String nom_societe;

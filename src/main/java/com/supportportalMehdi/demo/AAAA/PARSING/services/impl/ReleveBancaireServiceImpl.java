@@ -890,28 +890,62 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
     }
 
-    private static String getPathFileUploaded(MultipartFile file) throws IOException {
-        MultipartFile file1 = file ;// Your MultipartFile object
+//    private static String getPathFileUploaded(MultipartFile file) {
+//        MultipartFile file1 = file; // Your MultipartFile object
+//        String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
+//        File tempFile = null;
+//        String uploadedFilePath = null;
+//        try {
+//            // Create a temporary file
+//            tempFile = File.createTempFile("temp-", "-" + file1.getOriginalFilename());
+//            String filePath = tempFile.getAbsolutePath();
+//
+//            // Write the contents of the MultipartFile to the temporary file
+//            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+//                fos.write(file1.getBytes());
+//            }
+//
+//            // Move the temporary file to the upload directory
+//            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
+//            Files.move(tempFile.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
+//
+//            // Get the path of the uploaded file
+//            uploadedFilePath = target.toAbsolutePath().toString();
+//
+//            // Print the uploaded file path
+//            System.out.println("Uploaded file path: " + uploadedFilePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            // Handle the exception or throw a custom exception
+//        } finally {
+//            if (tempFile != null && uploadedFilePath == null) {
+//                tempFile.delete(); // Delete the temporary file only if uploadedFilePath is null
+//            }
+//        }
+//        return uploadedFilePath; // Return the uploaded file path or null
+//    }
+
+
+    private static String getPathFileUploaded(MultipartFile file) {
+        MultipartFile file1 = file; // Your MultipartFile object
         String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
-
-        // Create a temporary file
-        File tempFile = File.createTempFile("temp-", "-" + file1.getOriginalFilename());
-        String filePath = tempFile.getAbsolutePath();
-
-        // Write the contents of the MultipartFile to the temporary file
-        file1.transferTo(tempFile);
-        // Move the temporary file to the upload directory
-        Path target = Paths.get(uploadDir, file1.getOriginalFilename());
-        Files.move(tempFile.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
-
-        // Get the path of the uploaded file
-        String uploadedFilePath = target.toAbsolutePath().toString();
-
-        // Print the uploaded file path
-        System.out.println("Uploaded file path: " + uploadedFilePath);
-        tempFile.delete();
-        return uploadedFilePath ;
+        String uploadedFilePath = null;
+        try {
+            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
+            // Write the contents of the MultipartFile to the target file
+            Files.write(target, file1.getBytes());
+            // Get the path of the uploaded file
+            uploadedFilePath = target.toAbsolutePath().toString();
+            // Print the uploaded file path
+            System.out.println("Uploaded file path: " + uploadedFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle the exception or throw a custom exception
+        }
+        return uploadedFilePath; // Return the uploaded file path or null
     }
+
+
 
     public static String convertArrayToString(String[] arrayOfWordsPerLigne) {
         String ch = "" ;
