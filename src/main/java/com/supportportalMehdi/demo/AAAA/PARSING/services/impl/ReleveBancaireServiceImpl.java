@@ -124,7 +124,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
     @Override
     public ReleveBancaireDto parseAndExtract(MultipartFile file) throws IOException, ParseException {
         boolean ok = false;
-        ok=this.ExisteFileDocument(file);
+        //ok=this.ExisteFileDocument(file);
 
         if (ok) {
             System.out.println("Impossible===========");
