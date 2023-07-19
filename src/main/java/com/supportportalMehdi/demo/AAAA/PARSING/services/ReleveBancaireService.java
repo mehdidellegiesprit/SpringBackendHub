@@ -2,6 +2,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.services;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.ReleveBancaire;
 import org.bson.types.ObjectId;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,4 +25,6 @@ public interface ReleveBancaireService {
     ReleveBancaireDto updateCommentaireFactureToDonneeExtrait(DonneeExtrait data);
 
     ReleveBancaireDto deleteFacture(String facture,DonneeExtrait data);
+
+    ReleveBancaireDto AddReleve(ReleveBancaire data);
 }

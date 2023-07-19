@@ -23,7 +23,7 @@ public class SocieteDto {
         }
         return SocieteDto.builder()
                 .id(societe.getId())
-                .nomSociete(societe.getNomSociete())
+                .nomSociete(societe.getNameSociete())
                 .build();
     }
     public static Societe toEntity (SocieteDto societeDto){
@@ -32,7 +32,7 @@ public class SocieteDto {
         }
         Societe societe = new Societe() ;
         societe.setId(societeDto.getId());
-        societe.setNomSociete(societeDto.getNomSociete());
+        societe.setNameSociete(societeDto.getNomSociete());
         return societe;
 
     }

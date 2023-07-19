@@ -3,6 +3,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.controller.api;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.FactureData;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.ReleveBancaire;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +32,8 @@ public interface ReleveBancaireApi {
     @PostMapping(value = APP_ROOT + "/facture/delete")
     ResponseEntity<ReleveBancaireDto> deleteFacture(@RequestBody FactureData factureData);
 
-
+    @PostMapping(value=APP_ROOT+"/releve/add",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReleveBancaireDto> AddReleve(@RequestBody ReleveBancaire data) ;
 
 
 }

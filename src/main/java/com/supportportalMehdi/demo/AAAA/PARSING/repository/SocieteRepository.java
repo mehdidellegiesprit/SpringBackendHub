@@ -9,5 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface SocieteRepository extends MongoRepository<Societe, ObjectId> {
-    Optional<Societe> findSocieteByNomSociete(String name);
+    Optional<Societe> findByNameSociete(String nameSociete);
 }
+
+

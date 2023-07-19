@@ -2,6 +2,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.controller.api;
 
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.SocieteDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.Societe;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,4 +18,5 @@ public interface SocieteApi {
     ResponseEntity<SocieteDto> createSociete(@RequestBody SocieteDto societeDto);
     @GetMapping(value=APP_ROOT+"/societe/all",produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<SocieteDto>> getAllSociete();
+
 }

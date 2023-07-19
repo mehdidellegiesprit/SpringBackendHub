@@ -18,5 +18,5 @@ public class Societe {
     private ObjectId id;
 
     @Field("nameSociete")
-    private String nomSociete;
+    private String nameSociete;
 }

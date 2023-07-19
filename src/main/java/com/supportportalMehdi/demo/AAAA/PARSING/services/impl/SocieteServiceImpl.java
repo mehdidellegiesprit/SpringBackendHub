@@ -33,9 +33,10 @@ public class SocieteServiceImpl implements SocieteService {
 
     @Override
     public Optional<SocieteDto> findSocieteByNomSociete(String name) {
-        Optional<Societe> societe = societeRepository.findSocieteByNomSociete(name);
-        return Optional.of(SocieteDto.fromEntity(societe.get())) ;
+        Optional<Societe> societe = societeRepository.findByNameSociete(name);
+        return societe.map(SocieteDto::fromEntity);
     }
+
 
     @Override
     public List<SocieteDto> getAllSocietes() {

@@ -153,7 +153,8 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
                     FileInputStream inputStream = new FileInputStream(pathFileUploaded);
                     String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                    releveBancaireDto.setDataFileContent(base64String);
+                    //releveBancaireDto.setDataFileContent(base64String);
+                    releveBancaireDto.setDataFileContent("chaine vide");
 
                     //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
                     releveBancaireDto.setNom_societe(util.getNameSociete());
@@ -174,7 +175,8 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
                     FileInputStream inputStream = new FileInputStream(pathFileUploaded);
                     String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                    releveBancaireDto.setDataFileContent(base64String);
+                    //releveBancaireDto.setDataFileContent(base64String);
+                    releveBancaireDto.setDataFileContent("chaine vide");
 
                     //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
                     releveBancaireDto.setNom_societe(util.getNameSociete());
@@ -296,6 +298,13 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         // In this case, return null or transform your ReleveBancaire object into ReleveBancaireDto object
         // and return it as per your requirement.
         return null;
+    }
+
+    @Override
+    public ReleveBancaireDto AddReleve(ReleveBancaire data) {
+        ReleveBancaire updatedReleveBancaire = releveBancaireRepository.save(data);
+        // Conversion de l'objet ReleveBancaire en ReleveBancaireDto
+        return ReleveBancaireDto.fromEntity(updatedReleveBancaire);
     }
 
     public void  extractListeOperationFromCicBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {

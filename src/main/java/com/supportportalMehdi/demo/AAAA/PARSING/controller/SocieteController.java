@@ -4,6 +4,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.controller;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.controller.api.SocieteApi;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.SocieteDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.Societe;
 import com.supportportalMehdi.demo.AAAA.PARSING.services.SocieteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
