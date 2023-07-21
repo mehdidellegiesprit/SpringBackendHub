@@ -103,18 +103,17 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
     // updateReleveBancaire is not good developped
     @Override
     public ReleveBancaireDto updateReleveBancaire(ReleveBancaireDto releveBancaireDto) {
-        Optional<ReleveBancaire> existingReleveBancaire = Optional.ofNullable(ReleveBancaireDto.toEntity(releveBancaireDto));
-        if (existingReleveBancaire.isPresent()) {
-            ReleveBancaire updatedReleveBancaire = existingReleveBancaire.get();
-            updatedReleveBancaire.setNomBank(releveBancaireDto.getNomBank());
-            updatedReleveBancaire.setId_societe(releveBancaireDto.getId_societe());
-            updatedReleveBancaire.setExtraits(ReleveBancaireDto.toEntity(releveBancaireDto).getExtraits());
-            updatedReleveBancaire.setIban(releveBancaireDto.getIban());
-            return ReleveBancaireDto.fromEntity(releveBancaireRepository.save(updatedReleveBancaire));
-        } else {
-            throw new RuntimeException("ReleveBancaire not found");
-        }
+        ReleveBancaire existingReleveBancaire = releveBancaireRepository.findById(releveBancaireDto.getId())
+                .orElseThrow(() -> new RuntimeException("ReleveBancaire not found"));
+
+        existingReleveBancaire.setNomBank(releveBancaireDto.getNomBank());
+        existingReleveBancaire.setId_societe(releveBancaireDto.getId_societe());
+        existingReleveBancaire.setExtraits(releveBancaireDto.getExtraits());
+        existingReleveBancaire.setIban(releveBancaireDto.getIban());
+
+        return ReleveBancaireDto.fromEntity(releveBancaireRepository.save(existingReleveBancaire));
     }
+
 
     @Override
     public void deleteReleveBancaire(ObjectId id) {
@@ -1489,6 +1488,11 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         // Replace single space between two digits with no space
         return input.replaceAll("(?<=\\d)\\s{1,3}(?=\\d)", "");
         //return input.replaceAll("(?<=\\d)\\s(?=\\d)", "");
+    }
+    @Override
+    public Optional<ReleveBancaireDto> findByIban(String iban) {
+        return releveBancaireRepository.findByIban(iban)
+                .map(ReleveBancaireDto::fromEntity);
     }
 
 }

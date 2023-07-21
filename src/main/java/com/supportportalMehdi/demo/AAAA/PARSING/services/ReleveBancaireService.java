@@ -27,4 +27,6 @@ public interface ReleveBancaireService {
     ReleveBancaireDto deleteFacture(String facture,DonneeExtrait data);
 
     ReleveBancaireDto AddReleve(ReleveBancaire data);
+
+    Optional<ReleveBancaireDto> findByIban(String iban);
 }

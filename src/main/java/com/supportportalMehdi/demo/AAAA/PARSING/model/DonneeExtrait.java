@@ -44,4 +44,20 @@ public class DonneeExtrait {
 
     @Field("associationTitreUrl")
     HashMap<String, String> associationTitreUrl = new HashMap<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof DonneeExtrait)) return false;
+        DonneeExtrait that = (DonneeExtrait) o;
+        return Objects.equals(dateDonneeExtrait, that.dateDonneeExtrait) &&
+                Objects.equals(dateValeurDonneeExtrait, that.dateValeurDonneeExtrait) &&
+                Objects.equals(operations, that.operations);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dateDonneeExtrait, dateValeurDonneeExtrait, operations);
+    }
+
 }
