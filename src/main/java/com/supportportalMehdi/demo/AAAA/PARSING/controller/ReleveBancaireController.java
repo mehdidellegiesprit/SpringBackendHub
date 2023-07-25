@@ -59,85 +59,6 @@ public class ReleveBancaireController implements ReleveBancaireApi {
         return ResponseEntity.ok(releveBancaireService.deleteFacture(factureData.getFacture(), factureData.getData()));
     }
 
-//    @Override
-//    public ResponseEntity<ReleveBancaireDto> AddReleve(ReleveBancaire data) {
-//        System.out.println("Releve Bancaire :---"+data);
-//        System.out.println("getNom_societe()-"+data.getNom_societe());
-//        Optional<SocieteDto> exist_soc = this.societeService.findSocieteByNomSociete(data.getNom_societe());
-//        System.out.println("jiji");
-//        //findByNameSociete
-//        System.out.println("exist_soc: " + exist_soc); // Add this line
-//        if (!exist_soc.isPresent()) {
-//            SocieteDto soc = this.societeService.createSociete(new SocieteDto(data.getNom_societe()));
-//            data.setId_societe(soc.getId());
-//        } else {
-//            //data.setId_societe(exist_soc.get().getId());
-//            data.setId_societe(exist_soc.get().getId());
-//
-//        }
-//        return ResponseEntity.ok(releveBancaireService.AddReleve(data));
-//    }
-
-    //addOrUpdateReleve
-//    @Override
-//    public ResponseEntity<ReleveBancaireDto> AddReleve(ReleveBancaire data) {
-//        Optional<SocieteDto> exist_soc = this.societeService.findSocieteByNomSociete(data.getNom_societe());
-//
-//        if (!exist_soc.isPresent()) {
-//            SocieteDto soc = this.societeService.createSociete(new SocieteDto(data.getNom_societe()));
-//            data.setId_societe(soc.getId());
-//        } else {
-//            data.setId_societe(exist_soc.get().getId());
-//        }
-//
-//        // Check if 'ReleveBancaire' already exists with the same IBAN
-//        Optional<ReleveBancaireDto> optReleveDto = releveBancaireService.findByIban(data.getIban());
-//
-//        if (optReleveDto.isPresent()) {
-//            ReleveBancaire existingReleve = ReleveBancaireDto.toEntity(optReleveDto.get());
-//
-//            // Merge 'extraits' of the new and existing 'ReleveBancaire'
-//            for (ExtraitBancaire newExtrait : data.getExtraits()) {
-//                boolean extraitExists = false;
-//                for (ExtraitBancaire existingExtrait : existingReleve.getExtraits()) {
-//                    if (newExtrait.getDateExtrait().equals(existingExtrait.getDateExtrait())) {
-//                        extraitExists = true;
-//
-//                        // Merge 'donneeExtraits'
-//                        HashSet<DonneeExtrait> mergedDonneeExtraits = new HashSet<>(existingExtrait.getDonneeExtraits());
-//                        mergedDonneeExtraits.addAll(newExtrait.getDonneeExtraits());
-//                        existingExtrait.setDonneeExtraits(new ArrayList<>(mergedDonneeExtraits));
-//
-//                        // Sort 'donneeExtraits' by 'dateDonneeExtrait' and 'dateValeurDonneeExtrait'
-//                        existingExtrait.getDonneeExtraits().sort(Comparator.comparing(DonneeExtrait::getDateDonneeExtrait)
-//                                .thenComparing(DonneeExtrait::getDateValeurDonneeExtrait));
-//
-//                        // Replace totals, don't add to them
-//                        existingExtrait.setTotalMouvementsDebit(newExtrait.getTotalMouvementsDebit());
-//                        existingExtrait.setTotalMouvementsCredit(newExtrait.getTotalMouvementsCredit());
-//                    }
-//                }
-//                // If the 'extrait' does not exist in the existing statement, add it
-//                if (!extraitExists) {
-//                    existingReleve.getExtraits().add(newExtrait);
-//                }
-//            }
-//            // Sort 'extraits' by 'dateExtrait'
-//            existingReleve.getExtraits().sort(Comparator.comparing(ExtraitBancaire::getDateExtrait));
-//
-//            releveBancaireService.updateReleveBancaire(ReleveBancaireDto.fromEntity(existingReleve)); // Update existing 'ReleveBancaire'
-//        } else {
-//            releveBancaireService.createReleveBancaire(ReleveBancaireDto.fromEntity(data)); // Save new 'ReleveBancaire'
-//        }
-//
-//        // Return the updated or created 'ReleveBancaire'
-//        Optional<ReleveBancaireDto> releveBancaireDto = releveBancaireService.findByIban(data.getIban());
-//        if (releveBancaireDto.isPresent()) {
-//            return ResponseEntity.ok(releveBancaireDto.get());
-//        } else {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-//        }
-//    }
 
     @Override
     public ResponseEntity<ReleveBancaireDto> AddReleve(ReleveBancaire data) {
@@ -150,63 +71,74 @@ public class ReleveBancaireController implements ReleveBancaireApi {
             data.setId_societe(exist_soc.get().getId());
         }
 
-        // Check if 'ReleveBancaire' already exists with the same IBAN
         Optional<ReleveBancaireDto> optReleveDto = releveBancaireService.findByIban(data.getIban());
 
         if (optReleveDto.isPresent()) {
             ReleveBancaire existingReleve = ReleveBancaireDto.toEntity(optReleveDto.get());
 
-            // Merge 'extraits' of the new and existing 'ReleveBancaire'
             for (ExtraitBancaire newExtrait : data.getExtraits()) {
                 boolean extraitExists = false;
+
                 for (ExtraitBancaire existingExtrait : existingReleve.getExtraits()) {
-                    if (newExtrait.getDateExtrait().equals(existingExtrait.getDateExtrait())) {
+                    if (sameMonthAndYear(newExtrait.getDateExtrait(), existingExtrait.getDateExtrait())) {
                         extraitExists = true;
 
-                        // Merge 'donneeExtraits'
                         for (DonneeExtrait newDonnee : newExtrait.getDonneeExtraits()) {
-                            boolean donneeExists = false;
-                            for (DonneeExtrait existingDonnee : existingExtrait.getDonneeExtraits()) {
-                                if (newDonnee.equals(existingDonnee)) {
-                                    donneeExists = true;
-                                    break;
-                                }
-                            }
+                            boolean donneeExists = existingExtrait.getDonneeExtraits().stream().anyMatch(existingDonnee -> existingDonnee.equals(newDonnee));
                             if (!donneeExists) {
                                 existingExtrait.getDonneeExtraits().add(newDonnee);
                             }
                         }
 
-                        // Sort 'donneeExtraits' by 'dateDonneeExtrait' and 'dateValeurDonneeExtrait'
                         existingExtrait.getDonneeExtraits().sort(Comparator.comparing(DonneeExtrait::getDateDonneeExtrait)
                                 .thenComparing(DonneeExtrait::getDateValeurDonneeExtrait));
 
-                        // Replace totals, don't add to them
-                        existingExtrait.setTotalMouvementsDebit(newExtrait.getTotalMouvementsDebit());
-                        existingExtrait.setTotalMouvementsCredit(newExtrait.getTotalMouvementsCredit());
+                        if (getDay(newExtrait.getDateExtrait()) >= getDay(existingExtrait.getDateExtrait())) {
+                            existingExtrait.setDateExtrait(newExtrait.getDateExtrait());
+                            existingExtrait.setDateDuSoldeCrediteurDebutMois(newExtrait.getDateDuSoldeCrediteurDebutMois());
+                            existingExtrait.setCreditDuSoldeCrediteurDebutMois(newExtrait.getCreditDuSoldeCrediteurDebutMois());
+                            existingExtrait.setDateDuSoldeCrediteurFinMois(newExtrait.getDateDuSoldeCrediteurFinMois());
+                            existingExtrait.setCreditDuSoldeCrediteurFinMois(newExtrait.getCreditDuSoldeCrediteurFinMois());
+                            existingExtrait.setTotalMouvementsDebit(newExtrait.getTotalMouvementsDebit());
+                            existingExtrait.setTotalMouvementsCredit(newExtrait.getTotalMouvementsCredit());
+                        }
                         break;
                     }
                 }
-                // If the 'extrait' does not exist in the existing statement, add it
+
                 if (!extraitExists) {
                     existingReleve.getExtraits().add(newExtrait);
                 }
             }
-            // Sort 'extraits' by 'dateExtrait'
+
             existingReleve.getExtraits().sort(Comparator.comparing(ExtraitBancaire::getDateExtrait));
 
-            releveBancaireService.updateReleveBancaire(ReleveBancaireDto.fromEntity(existingReleve)); // Update existing 'ReleveBancaire'
+            releveBancaireService.updateReleveBancaire(ReleveBancaireDto.fromEntity(existingReleve));
         } else {
-            releveBancaireService.createReleveBancaire(ReleveBancaireDto.fromEntity(data)); // Save new 'ReleveBancaire'
+            releveBancaireService.createReleveBancaire(ReleveBancaireDto.fromEntity(data));
         }
 
-        // Return the updated or created 'ReleveBancaire'
         Optional<ReleveBancaireDto> releveBancaireDto = releveBancaireService.findByIban(data.getIban());
         if (releveBancaireDto.isPresent()) {
             return ResponseEntity.ok(releveBancaireDto.get());
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+    }
+
+    private boolean sameMonthAndYear(Date date1, Date date2) {
+        Calendar cal1 = Calendar.getInstance();
+        Calendar cal2 = Calendar.getInstance();
+        cal1.setTime(date1);
+        cal2.setTime(date2);
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH);
+    }
+
+    private int getDay(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.DAY_OF_MONTH);
     }
 
 }
