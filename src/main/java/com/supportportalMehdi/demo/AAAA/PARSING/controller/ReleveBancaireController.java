@@ -29,8 +29,8 @@ public class ReleveBancaireController implements ReleveBancaireApi {
 
     @Autowired
     public ReleveBancaireController(ReleveBancaireService releveBancaireService,SocieteService societeService) {
-        this.releveBancaireService = releveBancaireService;
-        this.societeService = societeService;
+          this.releveBancaireService = releveBancaireService;
+          this.societeService = societeService;
     }
 
     @Override

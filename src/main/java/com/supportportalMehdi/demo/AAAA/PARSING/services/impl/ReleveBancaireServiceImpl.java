@@ -495,9 +495,13 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     date_valeur_Operation_precedente = date_valeur_Operation;
 
                     debit_ou_credit = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
+                    System.out.println("deb = "+debit_ou_credit);
 
+                    if (debit_ou_credit == null || debit_ou_credit.trim().isEmpty()) {
+                        System.out.println("La variable debitOuCredit est vide ou contient seulement des espaces.");
+                    }
                     int position = arrayOfLignesContentPage[i].indexOf(debit_ou_credit);
-
+                    System.out.println("position***** = "+position);
 
 
 
@@ -517,7 +521,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
 
 
-                    System.out.println("liste_opertation="+liste_opertation);//break point
+
 
                     donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
                     donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
@@ -527,15 +531,25 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     donneeExtrait.setValide(false);
 
                     if (position!=-1){
-                        if (position<positionMax){
+                        if (position<=positionMax){ // inferieur strisctement
                             donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+                            System.out.println("position!=-1 debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
                             donneeExtrait.setCredit(0.0);
                         }
                         if (position>positionMax){
+                            System.out.println("position>positionMax debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+
                             donneeExtrait.setDebit(0.0);
                             donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
                         }
-                    };
+                        if (position==positionMax){
+                            System.out.println("egeauxx!!!!");
+                        }
+                    }else{
+                        System.out.println("position = -1"+position);//break pointPAIEMENT CB 1910 PARIS
+                        System.out.println("position debit ou credit***=----"+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+
+                    }
 
                 }
                 if (chaine.contains("Information sur la protection des comptes :") || chaine.contains(("(GE) : protégé par la Garantie de l'Etat"))){
