@@ -367,6 +367,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
 
         for (PDDocument page : splitpages) {
+            int lastIndexDebitOrCredit = 0 ;
 //			System.out.println("..................................................");
 //			System.out.println(page);
 //			System.out.println("..................................................");
@@ -535,12 +536,14 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                             donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
                             System.out.println("position!=-1 debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
                             donneeExtrait.setCredit(0.0);
+                            lastIndexDebitOrCredit = 1 ;
                         }
                         if (position>positionMax){
                             System.out.println("position>positionMax debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
 
                             donneeExtrait.setDebit(0.0);
                             donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+                            lastIndexDebitOrCredit = -1 ;
                         }
                         if (position==positionMax){
                             System.out.println("egeauxx!!!!");
@@ -570,23 +573,55 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     debit_total_mouvement=arrayOfWordsPerLigne[4];
                     credit_total_mouvement=arrayOfWordsPerLigne[5];
                     System.out.println("credit_total_mouvement="+credit_total_mouvement);
+                    //hahahahah
+                    System.out.println("operations="+liste_opertation);
+                    System.out.println("debit_ou_credit="+debit_ou_credit);
+                    System.out.println("dateOperation_precedente="+dateOperation_precedente);
+                    System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+                    System.out.println("dateOperation="+dateOperation);
+                    System.out.println("date_valeur_Operation="+date_valeur_Operation);
+                    System.out.println("lastIndexDebitOrCredit = "+lastIndexDebitOrCredit);
+                    donneeExtrait = new DonneeExtrait() ;
+                    donneeExtrait.setOperations(liste_opertation);
+                    //hahahahha
+                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
+
+                    if (lastIndexDebitOrCredit==1){ // inferieur strisctement
+                        donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+                        donneeExtrait.setCredit(0.0);
+                        lastIndexDebitOrCredit = 1 ;
+                    }
+                    if (lastIndexDebitOrCredit==-1){
+                        donneeExtrait.setDebit(0.0);
+                        donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+                        lastIndexDebitOrCredit = -1 ;
+                    }
+                    System.out.println("donneeExtrait = "+donneeExtrait);
                     //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 //					donneeExtrait.setOperations(liste_opertation);
 //					System.out.println(donneeExtrait);
 //					donneeExtraits.add(donneeExtrait);
 
 //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
-                    donneeExtrait.setOperations(liste_opertation);
+
+
+
                     System.out.println(donneeExtrait);
-                    donneeExtraits.add(donneeExtrait);
+                    /*donneeExtraits.add(donneeExtrait);
+                    extraitBancaire.setDonneeExtraits(donneeExtraits);*/
+
+                    // !! avoire tawa firas t5edmet
+                   // !!!!!!!!!!!!!!!!!!!!
+                    //extraits.add(extraitBancaire);
 //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 //					System.out.println("ok_total_mouvement="+ok_total_mouvement);
 //					System.out.println("debit_total_mouvement="+debit_total_mouvement);
 //					System.out.println("credit_total_mouvement="+credit_total_mouvement);
                 }
                 //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
-                if (ok_solde_crediteur){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
-                    //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+                if (ok_solde_crediteur){
+                    ok_solde_crediteur = false;
                     System.out.println("------------------------------------------------------------");
                     System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
                     System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
@@ -609,6 +644,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
                     // insert the date object into the database here
 
+                    System.out.println(donneeExtrait);
 
                     extraitBancaire.setDateExtrait(date);
 
@@ -618,6 +654,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
 
                     //donneeExtraits.add(operation_fin_tableau) ;
+                    donneeExtraits.add(donneeExtrait) ;
                     extraitBancaire.setDonneeExtraits(donneeExtraits);
                     System.out.println("debit_total_mouvement = "+debit_total_mouvement);
                     System.out.println("credit_total_mouvement = "+credit_total_mouvement);
@@ -640,6 +677,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                     extraitBancaire = new ExtraitBancaire() ;
                     donneeExtraits=new ArrayList<>();
                     ok_solde_crediteur=false ;
+                    donneeExtrait = new DonneeExtrait() ;
                     //releveBancaire.setIban(IBAN);
                 }
             }
