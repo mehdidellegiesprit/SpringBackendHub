@@ -686,7 +686,7 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         releveBancaireDto.setExtraits(extraits);
         pdfDocument.close();
         fis.close();
-
+        //e5er push fel git 9bal directement integration template!
     }
 
     private String isValidIBAN(String operationPerLigne) {
