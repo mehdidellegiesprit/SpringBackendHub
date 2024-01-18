@@ -1,6 +1,7 @@
 package com.supportportalMehdi.demo.AAAA.PARSING.controller.api;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReportDataDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.FactureData;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.ReleveBancaire;
@@ -35,5 +36,6 @@ public interface ReleveBancaireApi {
     @PostMapping(value=APP_ROOT+"/releve/add",consumes = MediaType.APPLICATION_JSON_VALUE,produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ReleveBancaireDto> AddReleve(@RequestBody ReleveBancaire data) ;
 
-
+    @GetMapping(value = APP_ROOT + "/yearlyReport/{year}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ReportDataDto> getYearlyReport(@PathVariable("year") int year);
 }

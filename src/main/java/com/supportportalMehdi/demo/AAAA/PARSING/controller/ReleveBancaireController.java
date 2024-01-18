@@ -4,6 +4,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.controller;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.controller.api.ReleveBancaireApi;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReportDataDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.SocieteDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.ExtraitBancaire;
@@ -125,6 +126,35 @@ public class ReleveBancaireController implements ReleveBancaireApi {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
+
+    @Override
+    public ResponseEntity<ReportDataDto> getYearlyReport(int year) {
+        // Étape 1 : Récupérer les relevés de l'année
+
+        List<ReleveBancaire> releves = releveBancaireService.findByYear(year); // Méthode fictive
+
+        // Étape 2 : Calculer les statistiques
+        int totalTransactions = 0;
+        double totalCreditedAmount = 0;
+        double totalDebitedAmount = 0;
+
+        for (ReleveBancaire releve : releves) {
+            for (ExtraitBancaire extrait : releve.getExtraits()) {
+                for (DonneeExtrait donnee : extrait.getDonneeExtraits()) {
+                    totalTransactions++;
+                    totalCreditedAmount += donnee.getCredit() != null ? donnee.getCredit() : 0;
+                    totalDebitedAmount += donnee.getDebit() != null ? donnee.getDebit() : 0;
+                }
+            }
+        }
+
+        // Étape 3 : Création de ReportDataDto
+        ReportDataDto reportData = new ReportDataDto(totalTransactions, totalCreditedAmount, totalDebitedAmount, null, null);
+
+        // Étape 4 : Retour de la réponse
+        return ResponseEntity.ok(reportData);
+    }
+
 
     private boolean sameMonthAndYear(Date date1, Date date2) {
         Calendar cal1 = Calendar.getInstance();

@@ -29,4 +29,6 @@ public interface ReleveBancaireService {
     ReleveBancaireDto AddReleve(ReleveBancaire data);
 
     Optional<ReleveBancaireDto> findByIban(String iban);
+
+    public List<ReleveBancaire> findByYear(int year) ;
 }

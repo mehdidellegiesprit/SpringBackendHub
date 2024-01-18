@@ -94,11 +94,11 @@ public class UserServiceImp implements UserService, UserDetailsService {
     }
 
     @Override
-    public User register(String firstName, String lastName, String username, String email,String phoneNumber, String gender) throws EmailExistException, UsernameExistException, MessagingException {
+    public User register(String firstName, String lastName, String username, String email,String phoneNumber, String gender, String password) throws EmailExistException, UsernameExistException, MessagingException {
         validateNewUsernameAndEmail(StringUtils.EMPTY,username,email) ;
         User user = new User() ;
         user.setUserId(generateUserId());
-        String password = generatePassword();
+        //String password = generatePassword();
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setUsername(username);

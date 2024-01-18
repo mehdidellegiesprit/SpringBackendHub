@@ -1547,4 +1547,18 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
                 .map(ReleveBancaireDto::fromEntity);
     }
 
+    @Override
+    public List<ReleveBancaire> findByYear(int year) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(year, Calendar.JANUARY, 1, 0, 0, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        Date startOfYear = calendar.getTime();
+
+        calendar.set(year + 1, Calendar.JANUARY, 1, 0, 0, 0);
+        Date endOfYear = calendar.getTime();
+
+        return releveBancaireRepository.findAllByYear(startOfYear, endOfYear);
+    }
+
+
 }

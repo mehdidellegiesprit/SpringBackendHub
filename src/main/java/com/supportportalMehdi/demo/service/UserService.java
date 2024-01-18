@@ -13,7 +13,7 @@ import java.util.Date;
 import java.util.List;
 
 public interface UserService {
-    User register(String firstName, String lastName, String username, String email, String phoneNumber, String gender) throws EmailExistException, UsernameExistException, MessagingException;
+    User register(String firstName, String lastName, String username, String email, String phoneNumber, String gender, String password) throws EmailExistException, UsernameExistException, MessagingException;
     List<User> getUsers() ;
     User findUserByUsername(String username) ;
     User findUserByEmail(String email) ;
