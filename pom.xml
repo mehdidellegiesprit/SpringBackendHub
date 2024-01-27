@@ -17,6 +17,13 @@
 		<java.version>11</java.version>
 	</properties>
 	<dependencies>
+<!--		pour heroku hethi jdidi a voir -->
+		<dependency>
+			<groupId>e-iceblue</groupId>
+			<artifactId>spire.pdf</artifactId>
+			<version>[3.0.0,)</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
@@ -96,11 +103,11 @@
 			<artifactId>PDFLayoutTextStripper</artifactId>
 			<version>2.2.3</version>
 		</dependency>
-		<dependency>
-			<groupId>e-iceblue</groupId>
-			<artifactId>spire.pdf</artifactId>
-			<version>4.10.2</version>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>e-iceblue</groupId>-->
+<!--			<artifactId>spire.pdf</artifactId>-->
+<!--			<version>4.10.2</version>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
@@ -132,6 +139,11 @@
 		</plugins>
 	</build>
 	<repositories>
+<!--		new repo a pour le depot -->
+		<repository>
+			<id>e-iceblue-repo</id>
+			<url>https://repo.e-iceblue.com/nexus/content/groups/public/</url>
+		</repository>
 		<repository>
 			<id>spring-milestones</id>
 			<name>Spring Milestones</name>
@@ -148,6 +160,7 @@
 				<enabled>false</enabled>
 			</releases>
 		</repository>
+
 	</repositories>
 	<pluginRepositories>
 		<pluginRepository>
