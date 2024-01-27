@@ -4,6 +4,7 @@ package com.supportportalMehdi.demo.AAAA.PARSING.services.impl;
 
 import com.sun.istack.NotNull;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReportDataDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.SocieteDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.exception.ErrorCodes;
 import com.supportportalMehdi.demo.AAAA.PARSING.exception.InvalidOperationException;
@@ -1559,6 +1560,116 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
         return releveBancaireRepository.findAllByYear(startOfYear, endOfYear);
     }
+
+    @Override
+    public List<ReportDataDto> aggregateDataForAllYears() {
+        List<ReleveBancaire> allReleves = releveBancaireRepository.findAll();
+        Map<String, ReportDataDto> data = new HashMap<>();
+
+        for (ReleveBancaire releve : allReleves) {
+            String bankName = releve.getNomBank();
+            String societeName = releve.getNom_societe(); // Assurez-vous que ce champ est correctement rempli
+
+            for (ExtraitBancaire extrait : releve.getExtraits()) {
+                int year = extractYearFromDate(extrait.getDateExtrait());
+                String key = year + "_" + bankName + "_" + societeName;
+
+                ReportDataDto report = data.computeIfAbsent(key, k -> new ReportDataDto(year, 0 /* ou une autre valeur par défaut pour le mois */, 0, 0.0, 0.0, societeName, bankName,0));
+
+                for (DonneeExtrait donnee : extrait.getDonneeExtraits()) {
+                    report.setTotalTransactions(report.getTotalTransactions() + 1);
+                    report.setTotalCreditedAmount(report.getTotalCreditedAmount() + Optional.ofNullable(donnee.getCredit()).orElse(0.0));
+                    report.setTotalDebitedAmount(report.getTotalDebitedAmount() + Optional.ofNullable(donnee.getDebit()).orElse(0.0));
+                }
+            }
+        }
+
+        List<ReportDataDto> reports = new ArrayList<>(data.values());
+
+        // Tri des données par année
+        reports.sort(Comparator.comparing(ReportDataDto::getYear));
+
+        return reports;
+    }
+
+    @Override
+    public List<ReportDataDto> aggregateDataForAllMonths() {
+        List<ReleveBancaire> allReleves = releveBancaireRepository.findAll();
+        Map<String, ReportDataDto> data = new HashMap<>();
+
+        for (ReleveBancaire releve : allReleves) {
+            String bankName = releve.getNomBank();
+            String societeName = releve.getNom_societe();
+
+            for (ExtraitBancaire extrait : releve.getExtraits()) {
+                int year = extractYearFromDate(extrait.getDateExtrait());
+                int month = extractMonthFromDate(extrait.getDateExtrait());
+                String key = year + "_" + String.format("%02d", month) + "_" + bankName + "_" + societeName;
+
+                ReportDataDto report = data.computeIfAbsent(key, k -> new ReportDataDto(year, month, 0, 0.0, 0.0, societeName, bankName,0));
+
+                for (DonneeExtrait donnee : extrait.getDonneeExtraits()) {
+                    report.setTotalTransactions(report.getTotalTransactions() + 1);
+                    report.setTotalCreditedAmount(report.getTotalCreditedAmount() + Optional.ofNullable(donnee.getCredit()).orElse(0.0));
+                    report.setTotalDebitedAmount(report.getTotalDebitedAmount() + Optional.ofNullable(donnee.getDebit()).orElse(0.0));
+                }
+            }
+        }
+
+        List<ReportDataDto> reports = new ArrayList<>(data.values());
+
+        // Tri des données par année, puis par mois
+        reports.sort(Comparator.comparing(ReportDataDto::getYear)
+                .thenComparing(ReportDataDto::getMonth));
+
+        return reports;
+    }
+
+    @Override
+    public List<ReportDataDto> aggregateDataForAllWeeks() {
+        List<ReleveBancaire> allReleves = releveBancaireRepository.findAll();
+        Map<String, ReportDataDto> data = new HashMap<>();
+
+        for (ReleveBancaire releve : allReleves) {
+            String bankName = releve.getNomBank();
+            String societeName = releve.getNom_societe();
+
+            for (ExtraitBancaire extrait : releve.getExtraits()) {
+                for (DonneeExtrait donnee : extrait.getDonneeExtraits()) {
+                    int year = extractYearFromDate(donnee.getDateDonneeExtrait());
+                    int week = extractWeekFromDate(donnee.getDateDonneeExtrait());
+                    String key = year + "_W" + week + "_" + bankName + "_" + societeName;
+
+                    ReportDataDto report = data.computeIfAbsent(key, k -> new ReportDataDto(year, 0, 0, 0.0, 0.0, societeName, bankName,week));
+                    report.setTotalTransactions(report.getTotalTransactions() + 1);
+                    report.setTotalCreditedAmount(report.getTotalCreditedAmount() + Optional.ofNullable(donnee.getCredit()).orElse(0.0));
+                    report.setTotalDebitedAmount(report.getTotalDebitedAmount() + Optional.ofNullable(donnee.getDebit()).orElse(0.0));
+                }
+            }
+        }
+
+        return new ArrayList<>(data.values());
+    }
+    private int extractWeekFromDate(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.WEEK_OF_YEAR);
+    }
+    private int extractMonthFromDate(Date date) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(date);
+        return cal.get(Calendar.MONTH) + 1; // +1 parce que Calendar.MONTH commence à 0 pour janvier
+    }
+
+
+    private int extractYearFromDate(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.YEAR);
+    }
+
+
+
 
 
 }

@@ -1,6 +1,7 @@
 package com.supportportalMehdi.demo.AAAA.PARSING.services;
 
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
+import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReportDataDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
 import com.supportportalMehdi.demo.AAAA.PARSING.model.ReleveBancaire;
 import org.bson.types.ObjectId;
@@ -31,4 +32,10 @@ public interface ReleveBancaireService {
     Optional<ReleveBancaireDto> findByIban(String iban);
 
     public List<ReleveBancaire> findByYear(int year) ;
+
+    List<ReportDataDto> aggregateDataForAllYears();
+
+    List<ReportDataDto> aggregateDataForAllMonths();
+
+    List<ReportDataDto> aggregateDataForAllWeeks();
 }

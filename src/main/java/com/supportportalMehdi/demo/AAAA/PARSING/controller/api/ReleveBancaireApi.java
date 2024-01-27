@@ -38,4 +38,17 @@ public interface ReleveBancaireApi {
 
     @GetMapping(value = APP_ROOT + "/yearlyReport/{year}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<ReportDataDto> getYearlyReport(@PathVariable("year") int year);
+
+    @GetMapping(value = APP_ROOT + "/aggregate/allYears", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<List<ReportDataDto>> getAllYearsReport() ;
+    // Dans votre contrôleur
+    @GetMapping(value = APP_ROOT + "/aggregate/allMonths", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<ReportDataDto>> getAllMonthsReport() ;
+
+    @GetMapping(value = APP_ROOT + "/aggregate/allWeeks", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<ReportDataDto>> getAllWeeksReport() ;
+    @GetMapping(value = APP_ROOT + "/aggregate/years", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Integer>> getAvailableYears() ;
+
+
 }

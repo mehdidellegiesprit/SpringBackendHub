@@ -6,6 +6,7 @@ import com.supportportalMehdi.demo.AAAA.PARSING.model.Societe;
 import com.supportportalMehdi.demo.AAAA.PARSING.repository.SocieteRepository;
 import com.supportportalMehdi.demo.AAAA.PARSING.services.SocieteService;
 import lombok.extern.slf4j.Slf4j;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,4 +46,15 @@ public class SocieteServiceImpl implements SocieteService {
                 .map(SocieteDto::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public Optional<SocieteDto> findById(ObjectId id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        return societeRepository.findById(id)
+                .map(SocieteDto::fromEntity); // Convertir Societe en SocieteDto si trouvé
+    }
+
 }

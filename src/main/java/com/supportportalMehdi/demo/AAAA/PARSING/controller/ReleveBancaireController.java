@@ -6,10 +6,8 @@ import com.supportportalMehdi.demo.AAAA.PARSING.controller.api.ReleveBancaireApi
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReleveBancaireDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.ReportDataDto;
 import com.supportportalMehdi.demo.AAAA.PARSING.dto.SocieteDto;
-import com.supportportalMehdi.demo.AAAA.PARSING.model.DonneeExtrait;
-import com.supportportalMehdi.demo.AAAA.PARSING.model.ExtraitBancaire;
-import com.supportportalMehdi.demo.AAAA.PARSING.model.FactureData;
-import com.supportportalMehdi.demo.AAAA.PARSING.model.ReleveBancaire;
+import com.supportportalMehdi.demo.AAAA.PARSING.model.*;
+import com.supportportalMehdi.demo.AAAA.PARSING.repository.ReleveBancaireRepository;
 import com.supportportalMehdi.demo.AAAA.PARSING.services.ReleveBancaireService;
 import com.supportportalMehdi.demo.AAAA.PARSING.services.SocieteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +25,13 @@ public class ReleveBancaireController implements ReleveBancaireApi {
 
     private SocieteService societeService ;
     private ReleveBancaireService releveBancaireService ;
+    private ReleveBancaireRepository releveBancaireRepository ;
 
     @Autowired
-    public ReleveBancaireController(ReleveBancaireService releveBancaireService,SocieteService societeService) {
+    public ReleveBancaireController(ReleveBancaireService releveBancaireService, SocieteService societeService, ReleveBancaireRepository releveBancaireRepository) {
           this.releveBancaireService = releveBancaireService;
           this.societeService = societeService;
+          this.releveBancaireRepository = releveBancaireRepository;
     }
 
     @Override
@@ -127,32 +127,58 @@ public class ReleveBancaireController implements ReleveBancaireApi {
         }
     }
 
-    @Override
     public ResponseEntity<ReportDataDto> getYearlyReport(int year) {
-        // Étape 1 : Récupérer les relevés de l'année
-
-        List<ReleveBancaire> releves = releveBancaireService.findByYear(year); // Méthode fictive
-
-        // Étape 2 : Calculer les statistiques
+        List<ReleveBancaire> releves = releveBancaireService.findByYear(year);
         int totalTransactions = 0;
         double totalCreditedAmount = 0;
         double totalDebitedAmount = 0;
+        Set<String> banks = new HashSet<>();
+        Set<String> societes = new HashSet<>();
 
         for (ReleveBancaire releve : releves) {
+            banks.add(releve.getNomBank());
+            if (releve.getId_societe() != null) {
+                Optional<SocieteDto> societeDto = societeService.findById(releve.getId_societe());
+                societeDto.ifPresent(s -> societes.add(s.getNomSociete()));
+            }
+
             for (ExtraitBancaire extrait : releve.getExtraits()) {
                 for (DonneeExtrait donnee : extrait.getDonneeExtraits()) {
                     totalTransactions++;
-                    totalCreditedAmount += donnee.getCredit() != null ? donnee.getCredit() : 0;
-                    totalDebitedAmount += donnee.getDebit() != null ? donnee.getDebit() : 0;
+                    totalCreditedAmount += Optional.ofNullable(donnee.getCredit()).orElse(0.0);
+                    totalDebitedAmount += Optional.ofNullable(donnee.getDebit()).orElse(0.0);
                 }
             }
         }
 
-        // Étape 3 : Création de ReportDataDto
-        ReportDataDto reportData = new ReportDataDto(totalTransactions, totalCreditedAmount, totalDebitedAmount, null, null);
+        String bankNames = String.join(", ", banks);
+        String societeNames = String.join(", ", societes);
+        //ReportDataDto reportData = new ReportDataDto(totalTransactions, totalCreditedAmount, totalDebitedAmount, societeNames, bankNames);
+        return ResponseEntity.ok(new ReportDataDto());
+    }
 
-        // Étape 4 : Retour de la réponse
-        return ResponseEntity.ok(reportData);
+    @Override
+    public ResponseEntity<List<ReportDataDto>> getAllYearsReport() {
+        List<ReportDataDto> yearlyReports = releveBancaireService.aggregateDataForAllYears();
+        return ResponseEntity.ok(yearlyReports);
+    }
+
+    @Override
+    public ResponseEntity<List<ReportDataDto>> getAllMonthsReport() {
+        List<ReportDataDto> monthlyReports = releveBancaireService.aggregateDataForAllMonths();
+        return ResponseEntity.ok(monthlyReports);
+    }
+
+    @Override
+    public ResponseEntity<List<ReportDataDto>> getAllWeeksReport() {
+        List<ReportDataDto> weeklyReports = releveBancaireService.aggregateDataForAllWeeks();
+        return ResponseEntity.ok(weeklyReports);
+    }
+
+    @Override
+    public ResponseEntity<List<Integer>> getAvailableYears() {
+        List<Integer> years = releveBancaireRepository.findDistinctYears();
+        return ResponseEntity.ok(years);
     }
 
 

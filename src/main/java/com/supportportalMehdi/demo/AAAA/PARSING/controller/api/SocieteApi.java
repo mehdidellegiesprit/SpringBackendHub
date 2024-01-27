@@ -18,5 +18,7 @@ public interface SocieteApi {
     ResponseEntity<SocieteDto> createSociete(@RequestBody SocieteDto societeDto);
     @GetMapping(value=APP_ROOT+"/societe/all",produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<SocieteDto>> getAllSociete();
+    @GetMapping(value = APP_ROOT + "/aggregate/societes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<String>> getAvailableSocietes() ;
 
 }
