@@ -61,6 +61,7 @@ public class DemoApplication {
 		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
 		return new CorsFilter(urlBasedCorsConfigurationSource);
 	}
+	//just commentaire
 	@Bean
 	public BCryptPasswordEncoder bCryptPasswordEncoder (){
 		//TODO l methode hethi fel lekher nejmou n7otouha fel SecurityConfiguration
