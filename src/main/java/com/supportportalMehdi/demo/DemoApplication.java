@@ -32,8 +32,8 @@ public class DemoApplication {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
-						.allowedOrigins("http://localhost:4200", "https://spring-server-pfe-cc201bffbf5c.herokuapp.com","https://angular-server-pfe-6e7b27eebb55.herokuapp.com") // Remplacez par l'URL de votre frontend
-//						.allowedOrigins( "https://angular-server-pfe-6e7b27eebb55.herokuapp.com") // Remplacez par l'URL de votre frontend
+//						.allowedOrigins("http://localhost:4200", "https://spring-server-pfe-cc201bffbf5c.herokuapp.com","https://angular-server-pfe-6e7b27eebb55.herokuapp.com") // Remplacez par l'URL de votre frontend
+						.allowedOrigins( "*") // Remplacez par l'URL de votre frontend
 						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
 						.allowedHeaders("*")
 						.allowCredentials(true);
