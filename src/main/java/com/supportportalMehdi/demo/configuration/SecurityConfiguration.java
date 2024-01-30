@@ -34,8 +34,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public SecurityConfiguration(
-            JwtAuthorizationFilter jwtAuthorizationFilter,
-//                                 JwtAccessDeniedHandler jwtAccessDeniedHandler,
+//            JwtAuthorizationFilter jwtAuthorizationFilter,
+                                 JwtAccessDeniedHandler jwtAccessDeniedHandler,
                                  JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
                                  UserDetailsService userDetailsService,
                                  BCryptPasswordEncoder bCryptPasswordEncoder) {
