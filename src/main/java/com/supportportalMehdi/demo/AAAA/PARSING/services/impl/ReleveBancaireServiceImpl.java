@@ -135,7 +135,9 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         }
         if (!ok){
             try {
+                // on peut ajouter ici un log pour voir ce qu'il se passe ici
                 String pathFileUploaded  = getPathFileUploaded(file);
+                // aussi on peut ajouter ici un log pour voir ce qu'il se passe ici !!!!
                 System.out.println("pathFileUploaded="+"*"+pathFileUploaded+"*");
 
                 String nameBank  = findNameBank(pathFileUploaded);
