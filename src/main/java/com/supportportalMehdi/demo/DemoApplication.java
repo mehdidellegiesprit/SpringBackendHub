@@ -51,23 +51,48 @@ public class DemoApplication {
 		SpringApplication.run(DemoApplication.class, args);
 		new File(USER_FOLDER).mkdirs();
 	}
-	@Bean
-	public CorsFilter corsFilter() {
-		UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
-		CorsConfiguration corsConfiguration = new CorsConfiguration();
-		corsConfiguration.setAllowCredentials(true);
-		corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://localhost:4300"));
-		//corsConfiguration.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
-		corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
-				"Accept", "Jwt-Token", "Authorization", "Origin, Accept", "X-Requested-With",
-				"Access-Control-Request-Method", "Access-Control-Request-Headers"));
-		corsConfiguration.setExposedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",
-				"Access-Control-Allow-Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
-		corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
-		return new CorsFilter(urlBasedCorsConfigurationSource);
-	}
-	//just commentaire
+//	@Bean
+//	public CorsFilter corsFilter() {
+//		UrlBasedCorsConfigurationSource urlBasedCorsConfigurationSource = new UrlBasedCorsConfigurationSource();
+//		CorsConfiguration corsConfiguration = new CorsConfiguration();
+//		corsConfiguration.setAllowCredentials(true);
+//		corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "http://localhost:4300"));
+//		//corsConfiguration.setAllowedOrigins(Collections.singletonList("http://localhost:4200"));
+//		corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
+//				"Accept", "Jwt-Token", "Authorization", "Origin, Accept", "X-Requested-With",
+//				"Access-Control-Request-Method", "Access-Control-Request-Headers"));
+//		corsConfiguration.setExposedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",
+//				"Access-Control-Allow-Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
+//		corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+//		urlBasedCorsConfigurationSource.registerCorsConfiguration("/**", corsConfiguration);
+//		return new CorsFilter(urlBasedCorsConfigurationSource);
+//	}
+//	//just commentaire
+@Bean
+public CorsFilter corsFilter() {
+	UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+	CorsConfiguration config = new CorsConfiguration();
+	config.setAllowCredentials(true);
+	config.setAllowedOrigins(Arrays.asList(
+			"http://localhost:4200",
+			"http://localhost:4300",
+			"https://angular-server-pfe-6e7b27eebb55.herokuapp.com",
+			"https://spring-server-pfe-cc201bffbf5c.herokuapp.com"
+	));
+	config.setAllowedHeaders(Arrays.asList(
+			"Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",
+			"Access-Control-Allow-Origin", "Access-Control-Request-Method",
+			"Access-Control-Request-Headers"
+	));
+	config.setExposedHeaders(Arrays.asList(
+			"Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",
+			"Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"
+	));
+	config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+	source.registerCorsConfiguration("/**", config);
+	return new CorsFilter(source);
+}
+
 	@Bean
 	public BCryptPasswordEncoder bCryptPasswordEncoder (){
 		//TODO l methode hethi fel lekher nejmou n7otouha fel SecurityConfiguration
