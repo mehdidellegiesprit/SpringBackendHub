@@ -49,14 +49,16 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
     private ReleveBancaireRepository releveBancaireRepository ;
     private SocieteService societeService ;
-
+    private final FirebaseFileUploader fileUploader;
 
     @Autowired
     public ReleveBancaireServiceImpl(ReleveBancaireRepository releveBancaireRepository,
-                                     SocieteService societeService
+                                     SocieteService societeService,
+                                     FirebaseFileUploader fileUploader
                                      ) {
         this.releveBancaireRepository = releveBancaireRepository;
         this.societeService = societeService;
+        this.fileUploader = fileUploader;
     }
 
     public boolean ExisteFileDocument(@NotNull MultipartFile file1) throws IOException {
@@ -987,25 +989,38 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 //    }
 
 
-    private static String getPathFileUploaded(MultipartFile file) {
-        MultipartFile file1 = file; // Your MultipartFile object
-        String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
-        String uploadedFilePath = null;
-        try {
-            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
-            // Write the contents of the MultipartFile to the target file
-            Files.write(target, file1.getBytes());
-            // Get the path of the uploaded file
-            uploadedFilePath = target.toAbsolutePath().toString();
-            // Print the uploaded file path
-            System.out.println("Uploaded file path: " + uploadedFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-            // Handle the exception or throw a custom exception
-        }
-        return uploadedFilePath; // Return the uploaded file path or null
-    }
+//    recement utilisee !!!
+//    private static String getPathFileUploaded(MultipartFile file) {
+//        MultipartFile file1 = file; // Your MultipartFile object
+//        String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
+//        String uploadedFilePath = null;
+//        try {
+//            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
+//            // Write the contents of the MultipartFile to the target file
+//            Files.write(target, file1.getBytes());
+//            // Get the path of the uploaded file
+//            uploadedFilePath = target.toAbsolutePath().toString();
+//            // Print the uploaded file path
+//            System.out.println("Uploaded file path: " + uploadedFilePath);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            // Handle the exception or throw a custom exception
+//        }
+//        return uploadedFilePath; // Return the uploaded file path or null
+//    }
+    private String getPathFileUploaded(MultipartFile file) throws IOException {
+        // Créer un fichier temporaire
+        Path tempFile = Files.createTempFile("upload-", file.getOriginalFilename());
+        file.transferTo(tempFile);
 
+        // Télécharger le fichier sur Firebase et obtenir l'URL
+        String firebaseUrl = fileUploader.uploadFile(tempFile, file.getOriginalFilename());
+
+        // Supprimer le fichier temporaire si nécessaire
+        Files.delete(tempFile);
+
+        return firebaseUrl; // Retourner l'URL du fichier sur Firebase
+    }
 
 
     public static String convertArrayToString(String[] arrayOfWordsPerLigne) {
