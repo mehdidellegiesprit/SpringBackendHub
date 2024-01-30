@@ -8,6 +8,8 @@ import com.supportportalMehdi.demo.exception.domain.*;
 import com.supportportalMehdi.demo.repository.UserRepository;
 import com.supportportalMehdi.demo.service.UserService;
 import com.supportportalMehdi.demo.utility.JWTTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,6 +42,7 @@ import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 @RestController
 @RequestMapping(value = {"/","/user"})
 public class UserResource extends ExceptionHandling {
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserResource.class);
     public static final String EMAIL_SENT = "An email with a new password was sent to: ";
     public static final String USER_DELETED_SECCESSFULY = "User Deleted Seccessfuly";
     private UserService userService ;
@@ -59,6 +62,7 @@ public class UserResource extends ExceptionHandling {
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody User user) {
         // if there is a probeleme im gonna throw an exception inside authenticate he will never pass to the next level
+        LOGGER.info("Login attempt for user: {}", user.getUsername());
         authenticate(user.getUsername(),user.getPassword());
         User loginUser = userService.findUserByUsername(user.getUsername()) ;
         UserPrincipal userPrincipal = new UserPrincipal(loginUser);
