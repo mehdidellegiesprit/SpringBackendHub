@@ -55,6 +55,7 @@ public class UserResource extends ExceptionHandling {
         this.userRepository = userRepository;
     }
 
+    @CrossOrigin
     @PostMapping("/login")
     public ResponseEntity<User> login(@RequestBody User user) {
         // if there is a probeleme im gonna throw an exception inside authenticate he will never pass to the next level
@@ -64,7 +65,7 @@ public class UserResource extends ExceptionHandling {
         HttpHeaders jwtHeader = getJwtHeader(userPrincipal);
         return new ResponseEntity<>(loginUser,jwtHeader, OK) ;
     }
-
+    @CrossOrigin
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) throws UserNotFoundException, EmailExistException, UsernameExistException, MessagingException {
         System.out.println("register path me "+user.getPassword());
