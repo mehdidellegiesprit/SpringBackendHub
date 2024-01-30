@@ -20,7 +20,7 @@ import static com.supportportalMehdi.demo.constant.SecurityConstant.TOKEN_PREFIX
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.OK;
 
-@Component
+//@Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private JWTTokenProvider jwtTokenProvider ;
 
