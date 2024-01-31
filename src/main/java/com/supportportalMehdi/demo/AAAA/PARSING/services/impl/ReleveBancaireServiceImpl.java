@@ -22,6 +22,8 @@ import org.apache.pdfbox.multipdf.Splitter;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.bson.types.ObjectId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -46,6 +48,8 @@ import java.util.zip.Adler32;
 @Service
 @Slf4j
 public class ReleveBancaireServiceImpl implements ReleveBancaireService {
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseFileUploader.class);
+
 
     private ReleveBancaireRepository releveBancaireRepository ;
     private SocieteService societeService ;
@@ -1013,6 +1017,15 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
     private String getPathFileUploaded(MultipartFile file) throws IOException {
         // Créer un fichier temporaire
         Path tempFile = Files.createTempFile("upload-", file.getOriginalFilename());
+        logger.info("Fichier temporaire créé : {}", tempFile.toString());
+
+        // Vérifier si le fichier existe et est lisible
+        if(Files.exists(tempFile) && Files.isReadable(tempFile)) {
+            logger.info("Le fichier temporaire existe et est lisible");
+        } else {
+            logger.error("Le fichier temporaire n'existe pas ou n'est pas lisible");
+        }
+
         file.transferTo(tempFile);
 
         // Télécharger le fichier sur Firebase et obtenir l'URL
@@ -1020,9 +1033,11 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
         // Supprimer le fichier temporaire si nécessaire
         Files.delete(tempFile);
+        logger.info("Fichier temporaire supprimé");
 
         return firebaseUrl; // Retourner l'URL du fichier sur Firebase
     }
+
 
 
     public static String convertArrayToString(String[] arrayOfWordsPerLigne) {

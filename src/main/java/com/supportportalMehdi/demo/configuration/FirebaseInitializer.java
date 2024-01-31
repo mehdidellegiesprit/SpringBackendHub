@@ -19,6 +19,7 @@ public class FirebaseInitializer {
 
     @PostConstruct
     public void initialize() {
+        logger.info("Début de l'initialisation de Firebase");
         try {
             String firebaseConfigBase64 = System.getenv("FIREBASE_CONFIG");
             logger.info("Récupération de la configuration Firebase...");
@@ -36,6 +37,7 @@ public class FirebaseInitializer {
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
             }
+            logger.info("Firebase initialisé avec succès");
         } catch (IOException e) {
             logger.error("Erreur lors de l'initialisation de Firebase", e);
 
