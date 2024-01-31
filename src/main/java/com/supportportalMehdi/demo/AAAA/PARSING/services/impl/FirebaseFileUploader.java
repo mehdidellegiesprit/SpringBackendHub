@@ -24,6 +24,8 @@ public class FirebaseFileUploader {
         logger.info("Tentative de téléchargement du fichier '{}' vers Firebase Storage sous le nom '{}'", originalFileName, newFileName);
 
         try {
+            logger.error("im the try blok =");
+
             BlobId blobId = BlobId.of("myfactpfe.appspot.com", newFileName);
             logger.error("blobId=", blobId);
 

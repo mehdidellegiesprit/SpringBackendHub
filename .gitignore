@@ -35,4 +35,4 @@ AppData/Local/
 
 #pour le fihchier de configuration firebase pour l'enregistrement des relevee bancaires
 # Ignorer le fichier de configuration Firebase
-src/main/java/com/supportportalMehdi/demo/utility/myfactpfe-firebase-adminsdk-2hwyw-3b5ccaf25a.json
+#src/main/java/com/supportportalMehdi/demo/utility/myfactpfe-firebase-adminsdk-2hwyw-3b5ccaf25a.json
