@@ -25,10 +25,13 @@ public class FirebaseFileUploader {
 
         try {
             BlobId blobId = BlobId.of("myfactpfe.appspot.com", newFileName);
-            BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
-            Storage storage = StorageOptions.getDefaultInstance().getService();
-            storage.create(blobInfo, Files.readAllBytes(filePath));
+            logger.error("blobId=", blobId);
 
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId).build();
+            logger.error(" blobInfo =",  blobInfo);
+            Storage storage = StorageOptions.getDefaultInstance().getService();
+            logger.error(" storage =",  storage);
+            storage.create(blobInfo, Files.readAllBytes(filePath));
             String mediaLink = storage.get(blobId).getMediaLink();
             logger.info("Fichier téléchargé avec succès. Media link: {}", mediaLink);
             return mediaLink;
