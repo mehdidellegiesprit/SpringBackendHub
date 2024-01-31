@@ -4,12 +4,10 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import org.springframework.stereotype.Service;
-
 import javax.annotation.PostConstruct;
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Base64;
+import java.io.InputStream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,31 +17,25 @@ public class FirebaseInitializer {
 
     @PostConstruct
     public void initialize() {
-        logger.info("Début de l'initialisation de Firebase");
         try {
-            String firebaseConfigBase64 = System.getenv("FIREBASE_CONFIG");
-            logger.info("Récupération de la configuration Firebase...");
+            // Charge le fichier de configuration Firebase depuis le classpath
+            InputStream firebaseConfigInputStream = getClass().getResourceAsStream("/firebase-config.json");
+            if (firebaseConfigInputStream == null) {
+                throw new IOException("Fichier de configuration Firebase introuvable dans le classpath");
+            }
 
-            byte[] decodedBytes = Base64.getDecoder().decode(firebaseConfigBase64);
-
-            logger.info("Configuration Firebase décodée avec succès.");
-
-            GoogleCredentials credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(decodedBytes));
-
+            // Utilise les informations de configuration pour initialiser Firebase
             FirebaseOptions options = new FirebaseOptions.Builder()
-                    .setCredentials(credentials)
+                    .setCredentials(GoogleCredentials.fromStream(firebaseConfigInputStream))
                     .build();
 
+            // Initialise l'application Firebase si elle n'est pas déjà initialisée
             if (FirebaseApp.getApps().isEmpty()) {
                 FirebaseApp.initializeApp(options);
+                logger.info("Firebase initialisé avec succès");
             }
-            logger.info("Firebase initialisé avec succès");
         } catch (IOException e) {
             logger.error("Erreur lors de l'initialisation de Firebase", e);
-
-            e.printStackTrace();
-            // Gérer l'erreur ici
         }
     }
-
 }
