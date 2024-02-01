@@ -126,80 +126,123 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
     public void deleteReleveBancaire(ObjectId id) {
         releveBancaireRepository.deleteById(id);
     }
-
-    @Override
     public ReleveBancaireDto parseAndExtract(MultipartFile file) throws IOException, ParseException {
-        boolean ok = false;
-        //ok=this.ExisteFileDocument(file);
+        // Initialisation du DTO
+        ReleveBancaireDto releveBancaireDto = new ReleveBancaireDto();
 
-        if (ok) {
-            System.out.println("Impossible===========");
-            throw new InvalidOperationException("Impossible de parser un fichier deja Traiteé !!!!!!! ",
-                    ErrorCodes.FILE_ALREADY_IN_USE);
+        // Lire le contenu du fichier une seule fois
+        byte[] fileContent = file.getBytes();
+
+        // Créer un nouvel InputStream à partir du contenu du fichier pour chaque utilisation
+        InputStream initialStream = new ByteArrayInputStream(fileContent);
+        String nameBank = findNameBank(initialStream); // Utiliser le premier InputStream
+        System.out.println("nameBank=" + "*" + nameBank + "*");
+
+        // Initialisation de l'objet utilitaire
+        Util util = new Util();
+
+        // Traitement spécifique en fonction de la banque
+        if (nameBank.contains("CIC")) {
+            InputStream cicStream1 = new ByteArrayInputStream(fileContent);
+            extractDataFromCicBank(util, cicStream1); // Utiliser un nouvel InputStream
+            InputStream cicStream2 = new ByteArrayInputStream(fileContent);
+            extractListeOperationFromCicBank(releveBancaireDto, util, cicStream2); // Et encore un pour la deuxième opération
+            releveBancaireDto.setNomBank("CIC");
+        } else if (nameBank.contains("BP")) {
+            InputStream bpStream1 = new ByteArrayInputStream(fileContent);
+            extractDataFromPopBank(util, bpStream1); // Utiliser un nouvel InputStream
+            InputStream bpStream2 = new ByteArrayInputStream(fileContent);
+            extractListeOperationFromPopBank(releveBancaireDto, util, bpStream2); // Et encore un pour la deuxième opération
+            releveBancaireDto.setNomBank("BP");
         }
-        if (!ok){
-            try {
-                // on peut ajouter ici un log pour voir ce qu'il se passe ici
-                String pathFileUploaded  = getPathFileUploaded(file);
-                // aussi on peut ajouter ici un log pour voir ce qu'il se passe ici !!!!
-                System.out.println("pathFileUploaded="+"*"+pathFileUploaded+"*");
 
-                String nameBank  = findNameBank(pathFileUploaded);
-                System.out.println("nameBank="+"*"+nameBank+"*");
-                ReleveBancaireDto releveBancaireDto = new ReleveBancaireDto();
+        // Configuration commune à toutes les branches
+        releveBancaireDto.setNameFile(file.getOriginalFilename());
 
-                Util util = new Util();
-                if (nameBank.contains("CIC")){
-                    extractDataFromCicBank(util,pathFileUploaded);
-                    extractListeOperationFromCicBank(releveBancaireDto, util,pathFileUploaded);
-                    System.out.println(releveBancaireDto);
-                    releveBancaireDto.setNomBank("CIC");
+        // Conversion du contenu du fichier en Base64
+        String base64String = Base64.getEncoder().encodeToString(fileContent);
+        releveBancaireDto.setDataFileContent(base64String);
 
-                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
-                    releveBancaireDto.setId_societe(societeDto.getId());
-                    releveBancaireDto.setNameFile(file.getOriginalFilename());
+        // Configuration supplémentaire du DTO
+        SocieteDto societeDto = new SocieteDto(util.getNameSociete());
+        releveBancaireDto.setId_societe(societeDto.getId());
+        releveBancaireDto.setNom_societe(util.getNameSociete());
 
-                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
-                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                    //releveBancaireDto.setDataFileContent(base64String);
-                    releveBancaireDto.setDataFileContent("chaine vide");
-
-                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
-                    releveBancaireDto.setNom_societe(util.getNameSociete());
-
-                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
-                }
-                if (nameBank.contains("BP")){
-                    extractDataFromPopBank(util,pathFileUploaded);
-                    System.out.println("nom_societe"+util.getNameSociete());
-                    System.out.println("chaine_max_espace"+util.getChaineMaxEspace());
-                    System.out.println("max_espace"+util.getMaxEspaces());
-                    extractListeOperationFromPopBank(releveBancaireDto, util,pathFileUploaded);
-                    System.out.println(releveBancaireDto);
-                    releveBancaireDto.setNomBank("BP");
-                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
-                    releveBancaireDto.setId_societe(societeDto.getId());
-                    releveBancaireDto.setNameFile(file.getOriginalFilename());
-
-                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
-                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
-                    //releveBancaireDto.setDataFileContent(base64String);
-                    releveBancaireDto.setDataFileContent("chaine vide");
-
-                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
-                    releveBancaireDto.setNom_societe(util.getNameSociete());
-
-                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
-                }
-                // le nom de  la societe
-            } catch (IOException e) {
-                System.out.println("Failed to delete temporary file: " + e.getMessage());
-                throw new InvalidOperationException("Impossible de parser un fichier deja en traitement",
-                        ErrorCodes.FILE_ALREADY_IN_USE);
-            }
-        }
-        return null;
+        return releveBancaireDto; // Retour du DTO configuré
     }
+//    @Override
+//    public ReleveBancaireDto parseAndExtract(MultipartFile file) throws IOException, ParseException {
+//        boolean ok = false;
+//        //ok=this.ExisteFileDocument(file);
+//
+//        if (ok) {
+//            System.out.println("Impossible===========");
+//            throw new InvalidOperationException("Impossible de parser un fichier deja Traiteé !!!!!!! ",
+//                    ErrorCodes.FILE_ALREADY_IN_USE);
+//        }
+//        if (!ok){
+//            try {
+//                // on peut ajouter ici un log pour voir ce qu'il se passe ici
+//                String pathFileUploaded  = getPathFileUploaded(file);
+//                // aussi on peut ajouter ici un log pour voir ce qu'il se passe ici !!!!
+//                System.out.println("pathFileUploaded="+"*"+pathFileUploaded+"*");
+//
+//                String nameBank  = findNameBank(pathFileUploaded);
+//                System.out.println("nameBank="+"*"+nameBank+"*");
+//                ReleveBancaireDto releveBancaireDto = new ReleveBancaireDto();
+//
+//                Util util = new Util();
+//                if (nameBank.contains("CIC")){
+//                    extractDataFromCicBank(util,pathFileUploaded);
+//                    extractListeOperationFromCicBank(releveBancaireDto, util,pathFileUploaded);
+//                    System.out.println(releveBancaireDto);
+//                    releveBancaireDto.setNomBank("CIC");
+//
+//                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
+//                    releveBancaireDto.setId_societe(societeDto.getId());
+//                    releveBancaireDto.setNameFile(file.getOriginalFilename());
+//
+//                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
+//                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
+//                    //releveBancaireDto.setDataFileContent(base64String);
+//                    releveBancaireDto.setDataFileContent("chaine vide");
+//
+//                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
+//                    releveBancaireDto.setNom_societe(util.getNameSociete());
+//
+//                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
+//                }
+//                if (nameBank.contains("BP")){
+//                    extractDataFromPopBank(util,pathFileUploaded);
+//                    System.out.println("nom_societe"+util.getNameSociete());
+//                    System.out.println("chaine_max_espace"+util.getChaineMaxEspace());
+//                    System.out.println("max_espace"+util.getMaxEspaces());
+//                    extractListeOperationFromPopBank(releveBancaireDto, util,pathFileUploaded);
+//                    System.out.println(releveBancaireDto);
+//                    releveBancaireDto.setNomBank("BP");
+//                    SocieteDto societeDto = new SocieteDto(util.getNameSociete());
+//                    releveBancaireDto.setId_societe(societeDto.getId());
+//                    releveBancaireDto.setNameFile(file.getOriginalFilename());
+//
+//                    FileInputStream inputStream = new FileInputStream(pathFileUploaded);
+//                    String base64String = Base64.getEncoder().encodeToString(IOUtils.toByteArray(inputStream));
+//                    //releveBancaireDto.setDataFileContent(base64String);
+//                    releveBancaireDto.setDataFileContent("chaine vide");
+//
+//                    //releveBancaireDto = this.createReleveBancaire(releveBancaireDto);
+//                    releveBancaireDto.setNom_societe(util.getNameSociete());
+//
+//                    return releveBancaireDto; // On retourne directement le DTO sans l'enregistrer dans la base de données
+//                }
+//                // le nom de  la societe
+//            } catch (IOException e) {
+//                System.out.println("Failed to delete temporary file: " + e.getMessage());
+//                throw new InvalidOperationException("Impossible de parser un fichier deja en traitement",
+//                        ErrorCodes.FILE_ALREADY_IN_USE);
+//            }
+//        }
+//        return null;
+//    }
 
 
     @Override
@@ -314,300 +357,299 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         // Conversion de l'objet ReleveBancaire en ReleveBancaireDto
         return ReleveBancaireDto.fromEntity(updatedReleveBancaire);
     }
-
-    public void  extractListeOperationFromCicBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {
+    public void extractListeOperationFromCicBank(ReleveBancaireDto releveBancaireDto, Util util, InputStream fileInputStream) throws IOException, ParseException {
         int positionMax = util.getChaineMaxEspace().length() - util.getMaxEspaces() - 1 ;
         //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
-        File file = new File(pathFileUploaded) ;
-        FileInputStream fis = new FileInputStream(file) ;
-        PDDocument pdfDocument = PDDocument.load(fis);
-        Splitter splitter = new Splitter();
-        List<PDDocument> splitpages = splitter.split(pdfDocument);
-        // pdfTextStripper = pdfReader
-        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
-        pdfTextStripper.setSortByPosition(true);
-        pdfTextStripper.setAddMoreFormatting(true);
+        // Supposons que 'fileInputStream' est l'InputStream obtenu directement à partir du fichier uploadé
+        PDDocument pdfDocument = null;
+        try {
+            pdfDocument = PDDocument.load(fileInputStream); // Chargement du document directement à partir de l'InputStream
+            Splitter splitter = new Splitter();
+            List<PDDocument> splitPages = splitter.split(pdfDocument); // Division du document en pages
+            PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper();
+            pdfTextStripper.setSortByPosition(true);
+            pdfTextStripper.setAddMoreFormatting(true);
+
+            // Ici, vous continueriez avec votre logique spécifique pour traiter chaque page du document
+            // Par exemple, parcourir 'splitPages' et extraire le texte nécessaire, analyser le texte, etc.
+
+            String nameBank = "CIC" ;
+            ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+            boolean ok = false ;int nombreLigneNonVide = 0 ;
+
+
+            boolean ok_test_Releve_bancaire = false;
+            boolean ok_test_format_releve_bancaire = false;
+            boolean ok_test_head_array = false;
+            boolean ok_test_debut_operation_array = false;
+            String date_prelevement_extrait ="" ;
+            String premier_ligne_solde_crediteur_au_date = "";
+            String premier_ligne_credit_euro = "";
+            String dernier_ligne_solde_crediteur_au_date = "";
+            String dernier_ligne_credit_euro = "";
+            boolean ok_test_date_valeur_operation = false;
+            String date_valeur_operation = "";
+            String debit_ou_credit = "" ;
+            String liste_opertation="" ;
+            String dateOperation = "";
+            String date_valeur_Operation="";
+            boolean ok_test_fin_page;
+            boolean ok_total_mouvement = false;
+            String debit_total_mouvement="";
+            String credit_total_mouvement="";
+            String IBAN = "" ;
+            String dateOperation_precedente ="";
+            String date_valeur_Operation_precedente ="";
+            boolean ok_solde_crediteur = false ;
 
 
 
-
-        String nameBank = "CIC" ;
-        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
-        boolean ok = false ;int nombreLigneNonVide = 0 ;
-
-
-        boolean ok_test_Releve_bancaire = false;
-        boolean ok_test_format_releve_bancaire = false;
-        boolean ok_test_head_array = false;
-        boolean ok_test_debut_operation_array = false;
-        String date_prelevement_extrait ="" ;
-        String premier_ligne_solde_crediteur_au_date = "";
-        String premier_ligne_credit_euro = "";
-        String dernier_ligne_solde_crediteur_au_date = "";
-        String dernier_ligne_credit_euro = "";
-        boolean ok_test_date_valeur_operation = false;
-        String date_valeur_operation = "";
-        String debit_ou_credit = "" ;
-        String liste_opertation="" ;
-        String dateOperation = "";
-        String date_valeur_Operation="";
-        boolean ok_test_fin_page;
-        boolean ok_total_mouvement = false;
-        String debit_total_mouvement="";
-        String credit_total_mouvement="";
-        String IBAN = "" ;
-        String dateOperation_precedente ="";
-        String date_valeur_Operation_precedente ="";
-        boolean ok_solde_crediteur = false ;
-
-
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        DonneeExtrait donneeExtrait = new DonneeExtrait() ;
-        ExtraitBancaire extraitBancaire = new ExtraitBancaire();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            DonneeExtrait donneeExtrait = new DonneeExtrait() ;
+            ExtraitBancaire extraitBancaire = new ExtraitBancaire();
 
 
 
 //		ArrayList<Operation>operationsArrayList = new ArrayList<>();
-        List<ExtraitBancaire> extraits = new ArrayList<>();
-        List<DonneeExtrait> donneeExtraits=new ArrayList<>();
+            List<ExtraitBancaire> extraits = new ArrayList<>();
+            List<DonneeExtrait> donneeExtraits=new ArrayList<>();
 
 
 
 
-        for (PDDocument page : splitpages) {
-            int lastIndexDebitOrCredit = 0 ;
+            for (PDDocument page : splitPages) {
+                int lastIndexDebitOrCredit = 0 ;
 //			System.out.println("..................................................");
 //			System.out.println(page);
 //			System.out.println("..................................................");
-            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
-            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
-            ok_test_fin_page = false;
-            ok_test_head_array = false;
-            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
-                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
-                // split = diviser
-                //.split("\\s+") = split par espace ou plusieurs espaces
-                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
-                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
-                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
-                System.out.println(chaine); //break point ici
-                /***********************DEBUT DATA DE LA SOCIETE***************************/
-                //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
-                if (chaine.contains("RELEVE")){
-                    ok_test_Releve_bancaire = true ;
-                    System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
-                }
-                if (ok_test_Releve_bancaire  ){
-                    System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
-                    if (chaine.contains("T-CONNECT")){
-                        chaine=chaine.replace("T-CONNECT", "");
-                        chaine= chaine.substring(0,chaine.length()-1);
+                String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+                String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+                ok_test_fin_page = false;
+                ok_test_head_array = false;
+                for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+                    System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+                    // split = diviser
+                    //.split("\\s+") = split par espace ou plusieurs espaces
+                    String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
+                    System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+                    String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+                    System.out.println(chaine); //break point ici
+                    /***********************DEBUT DATA DE LA SOCIETE***************************/
+                    //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
+                    if (chaine.contains("RELEVE")){
+                        ok_test_Releve_bancaire = true ;
+                        System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
                     }
-                    System.out.println(chaine);
-                    if (isValidFormatOfDateReleveBancaire(chaine)){
-                        ok_test_format_releve_bancaire = true ;
-                        date_prelevement_extrait = chaine;
-                        System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
-                        System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+                    if (ok_test_Releve_bancaire  ){
+                        System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+                        if (chaine.contains("T-CONNECT")){
+                            chaine=chaine.replace("T-CONNECT", "");
+                            chaine= chaine.substring(0,chaine.length()-1);
+                        }
+                        System.out.println(chaine);
+                        if (isValidFormatOfDateReleveBancaire(chaine)){
+                            ok_test_format_releve_bancaire = true ;
+                            date_prelevement_extrait = chaine;
+                            System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
+                            System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+                        }
                     }
-                }
-                if (chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")){
-                    ok_test_head_array = true ;
-                    System.out.println("ok_test_head_array="+ok_test_head_array);
-                }
-                if (chaine.contains("SOLDE CREDITEUR AU")){
-                    System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
-                    System.out.println("chaine ="+chaine);
-                }
-                ///hethi fi awel tableau
-                if (ok_total_mouvement==false){
-                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[4]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[5])){
-                        ok_test_debut_operation_array = true ;
-                        premier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[4] ;
-                        premier_ligne_credit_euro = arrayOfWordsPerLigne[5] ;
-                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
-                        System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
-                        System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
-                        //ok_total_mouvement=!ok_total_mouvement;
+                    if (chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")){
+                        ok_test_head_array = true ;
+                        System.out.println("ok_test_head_array="+ok_test_head_array);
                     }
-                }
-                ///hethi fi e5er tableau
-                if (ok_total_mouvement==true){
-                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1])){
+                    if (chaine.contains("SOLDE CREDITEUR AU")){
+                        System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
+                        System.out.println("chaine ="+chaine);
+                    }
+                    ///hethi fi awel tableau
+                    if (ok_total_mouvement==false){
+                        if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[4]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[5])){
+                            ok_test_debut_operation_array = true ;
+                            premier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[4] ;
+                            premier_ligne_credit_euro = arrayOfWordsPerLigne[5] ;
+                            System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+                            System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
+                            System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
+                            //ok_total_mouvement=!ok_total_mouvement;
+                        }
+                    }
+                    ///hethi fi e5er tableau
+                    if (ok_total_mouvement==true){
+                        if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1])){
+                            //hethouma tawa
+                            ok_solde_crediteur = true ;
+                            ok_test_fin_page=true ;
+                            liste_opertation = "" ;
+                            //end of
+                            ok_test_debut_operation_array = false ;
+                            dernier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] ;
+                            dernier_ligne_credit_euro = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1] ;
+                            System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+                            System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
+                            System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
+                            ok_total_mouvement=false ;
+                        }
+                    }
+
+                    if (arrayOfWordsPerLigne.length>=3){
+                        dateOperation = arrayOfWordsPerLigne[1] ;
+                        date_valeur_Operation = arrayOfWordsPerLigne[2] ;
+                    }else {
+                        dateOperation = "" ;
+                        date_valeur_Operation = "" ;
+                    }
+                    if (chaine.contains("IBAN") && isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1))!=""){
                         //hethouma tawa
-                        ok_solde_crediteur = true ;
-                        ok_test_fin_page=true ;
-                        liste_opertation = "" ;
+                        //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+                        IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
+
+                        System.out.println("IBAN.........="+IBAN+"=");
+                        // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
                         //end of
-                        ok_test_debut_operation_array = false ;
-                        dernier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] ;
-                        dernier_ligne_credit_euro = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1] ;
-                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
-                        System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
-                        System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
-                        ok_total_mouvement=false ;
-                    }
-                }
-
-                if (arrayOfWordsPerLigne.length>=3){
-                    dateOperation = arrayOfWordsPerLigne[1] ;
-                    date_valeur_Operation = arrayOfWordsPerLigne[2] ;
-                }else {
-                    dateOperation = "" ;
-                    date_valeur_Operation = "" ;
-                }
-                if (chaine.contains("IBAN") && isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1))!=""){
-                    //hethouma tawa
-                    //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
-                    IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
-
-                    System.out.println("IBAN.........="+IBAN+"=");
-                    // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
-                    //end of
 //                    ok_test_fin_page=true ;
 //                    liste_opertation = "" ;
-                }
-                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
-                    if (liste_opertation.equals("") == false){
-                        System.out.println("\n............................................................\n");
-                        System.out.println("dateOperation_precedente="+dateOperation_precedente);
-                        System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
-                        System.out.println("liste_opertation="+liste_opertation);
-                        System.out.println("\n............................................................\n");
+                    }
+                    if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
+                        if (liste_opertation.equals("") == false){
+                            System.out.println("\n............................................................\n");
+                            System.out.println("dateOperation_precedente="+dateOperation_precedente);
+                            System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+                            System.out.println("liste_opertation="+liste_opertation);
+                            System.out.println("\n............................................................\n");
 
-                        donneeExtrait.setOperations(liste_opertation);
+                            donneeExtrait.setOperations(liste_opertation);
+                            // factures
+                            donneeExtrait.setFactures(new ArrayList<>());
+                            donneeExtrait.setCommentairesFactures(new HashMap<>());
+                            donneeExtrait.setValide(false);
+
+
+
+
+                            //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
+                            System.out.println(donneeExtraits);
+                            //ahne lezemna nda5ouha lel base
+                            donneeExtraits.add(donneeExtrait);
+
+                            System.out.println(donneeExtraits);
+                            //!!!!
+
+
+                            donneeExtrait=new DonneeExtrait();
+                            //operationsArrayList=new ArrayList<Operation>();
+                            liste_opertation = "" ;
+                            System.out.println("liste_opertation="+liste_opertation);
+                        }
+                        ok_test_date_valeur_operation=true ;
+                        //date_valeur_operation = dateOperation ;//02/11/2020
+                        dateOperation_precedente = dateOperation ;
+                        date_valeur_Operation_precedente = date_valeur_Operation;
+
+                        debit_ou_credit = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
+                        System.out.println("deb = "+debit_ou_credit);
+
+                        if (debit_ou_credit == null || debit_ou_credit.trim().isEmpty()) {
+                            System.out.println("La variable debitOuCredit est vide ou contient seulement des espaces.");
+                        }
+                        int position = arrayOfLignesContentPage[i].indexOf(debit_ou_credit);
+                        System.out.println("position***** = "+position);
+
+
+
+
+
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+                        //!!!!!!!!!!
+                        int index_date_operation = getPositionOfDateOperation_CIC_BANK(arrayOfWordsPerLigne,date_prelevement_extrait);
+                        if (index_date_operation!=-1){
+                            // parametre yetbedlou fel arrayOfWordsPerLigne khater mech nafes display normalemeent
+                            liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-2)+"***";
+                            System.out.println("liste_opertation="+liste_opertation);
+                        }
+
+
+                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
+
+
+
+
+                        donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+                        donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
                         // factures
                         donneeExtrait.setFactures(new ArrayList<>());
                         donneeExtrait.setCommentairesFactures(new HashMap<>());
                         donneeExtrait.setValide(false);
 
+                        if (position!=-1){
+                            if (position<=positionMax){ // inferieur strisctement
+                                donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+                                System.out.println("position!=-1 debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+                                donneeExtrait.setCredit(0.0);
+                                lastIndexDebitOrCredit = 1 ;
+                            }
+                            if (position>positionMax){
+                                System.out.println("position>positionMax debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
 
+                                donneeExtrait.setDebit(0.0);
+                                donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+                                lastIndexDebitOrCredit = -1 ;
+                            }
+                            if (position==positionMax){
+                                System.out.println("egeauxx!!!!");
+                            }
+                        }else{
+                            System.out.println("position = -1"+position);//break pointPAIEMENT CB 1910 PARIS
+                            System.out.println("position debit ou credit***=----"+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
 
+                        }
 
-                        //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
-                        System.out.println(donneeExtraits);
-                        //ahne lezemna nda5ouha lel base
-                        donneeExtraits.add(donneeExtrait);
-
-                        System.out.println(donneeExtraits);
-                        //!!!!
-
-
-                        donneeExtrait=new DonneeExtrait();
-                        //operationsArrayList=new ArrayList<Operation>();
-                        liste_opertation = "" ;
-                        System.out.println("liste_opertation="+liste_opertation);
                     }
-                    ok_test_date_valeur_operation=true ;
-                    //date_valeur_operation = dateOperation ;//02/11/2020
-                    dateOperation_precedente = dateOperation ;
-                    date_valeur_Operation_precedente = date_valeur_Operation;
-
-                    debit_ou_credit = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
-                    System.out.println("deb = "+debit_ou_credit);
-
-                    if (debit_ou_credit == null || debit_ou_credit.trim().isEmpty()) {
-                        System.out.println("La variable debitOuCredit est vide ou contient seulement des espaces.");
+                    if (chaine.contains("Information sur la protection des comptes :") || chaine.contains(("(GE) : protégé par la Garantie de l'Etat"))){
+                        ok_test_fin_page=true;
+                        System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
                     }
-                    int position = arrayOfLignesContentPage[i].indexOf(debit_ou_credit);
-                    System.out.println("position***** = "+position);
-
-
-
-
-
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-                    //!!!!!!!!!!
-                    int index_date_operation = getPositionOfDateOperation_CIC_BANK(arrayOfWordsPerLigne,date_prelevement_extrait);
-                    if (index_date_operation!=-1){
-                        // parametre yetbedlou fel arrayOfWordsPerLigne khater mech nafes display normalemeent
-                         liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-2)+"***";
-                         System.out.println("liste_opertation="+liste_opertation);
+                    if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
+                        if ((chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("Total des mouvements")==false) && (chaine.contains("IBAN")==false)){
+                            liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
+                            //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
+                            System.out.println("liste_opertation="+liste_opertation);//break point
+                        }
                     }
+                    //lezemni ntayah win toufa l page
 
+                    if (chaine.contains("Total des mouvements")){
+                        ok_total_mouvement=true;
+                        debit_total_mouvement=arrayOfWordsPerLigne[4];
+                        credit_total_mouvement=arrayOfWordsPerLigne[5];
+                        System.out.println("credit_total_mouvement="+credit_total_mouvement);
+                        //hahahahah
+                        System.out.println("operations="+liste_opertation);
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+                        System.out.println("dateOperation_precedente="+dateOperation_precedente);
+                        System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+                        System.out.println("dateOperation="+dateOperation);
+                        System.out.println("date_valeur_Operation="+date_valeur_Operation);
+                        System.out.println("lastIndexDebitOrCredit = "+lastIndexDebitOrCredit);
+                        donneeExtrait = new DonneeExtrait() ;
+                        donneeExtrait.setOperations(liste_opertation);
+                        //hahahahha
+                        donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+                        donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
 
-                    //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
-
-
-
-
-                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
-                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
-                    // factures
-                    donneeExtrait.setFactures(new ArrayList<>());
-                    donneeExtrait.setCommentairesFactures(new HashMap<>());
-                    donneeExtrait.setValide(false);
-
-                    if (position!=-1){
-                        if (position<=positionMax){ // inferieur strisctement
+                        if (lastIndexDebitOrCredit==1){ // inferieur strisctement
                             donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
-                            System.out.println("position!=-1 debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
                             donneeExtrait.setCredit(0.0);
                             lastIndexDebitOrCredit = 1 ;
                         }
-                        if (position>positionMax){
-                            System.out.println("position>positionMax debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
-
+                        if (lastIndexDebitOrCredit==-1){
                             donneeExtrait.setDebit(0.0);
                             donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
                             lastIndexDebitOrCredit = -1 ;
                         }
-                        if (position==positionMax){
-                            System.out.println("egeauxx!!!!");
-                        }
-                    }else{
-                        System.out.println("position = -1"+position);//break pointPAIEMENT CB 1910 PARIS
-                        System.out.println("position debit ou credit***=----"+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
-
-                    }
-
-                }
-                if (chaine.contains("Information sur la protection des comptes :") || chaine.contains(("(GE) : protégé par la Garantie de l'Etat"))){
-                    ok_test_fin_page=true;
-                    System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
-                }
-                if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
-                    if ((chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("Total des mouvements")==false) && (chaine.contains("IBAN")==false)){
-                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
-                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
-                        System.out.println("liste_opertation="+liste_opertation);//break point
-                    }
-                }
-                //lezemni ntayah win toufa l page
-
-                if (chaine.contains("Total des mouvements")){
-                    ok_total_mouvement=true;
-                    debit_total_mouvement=arrayOfWordsPerLigne[4];
-                    credit_total_mouvement=arrayOfWordsPerLigne[5];
-                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
-                    //hahahahah
-                    System.out.println("operations="+liste_opertation);
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-                    System.out.println("dateOperation_precedente="+dateOperation_precedente);
-                    System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
-                    System.out.println("dateOperation="+dateOperation);
-                    System.out.println("date_valeur_Operation="+date_valeur_Operation);
-                    System.out.println("lastIndexDebitOrCredit = "+lastIndexDebitOrCredit);
-                    donneeExtrait = new DonneeExtrait() ;
-                    donneeExtrait.setOperations(liste_opertation);
-                    //hahahahha
-                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
-                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
-
-                    if (lastIndexDebitOrCredit==1){ // inferieur strisctement
-                        donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
-                        donneeExtrait.setCredit(0.0);
-                        lastIndexDebitOrCredit = 1 ;
-                    }
-                    if (lastIndexDebitOrCredit==-1){
-                        donneeExtrait.setDebit(0.0);
-                        donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
-                        lastIndexDebitOrCredit = -1 ;
-                    }
-                    System.out.println("donneeExtrait = "+donneeExtrait);
-                    //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+                        System.out.println("donneeExtrait = "+donneeExtrait);
+                        //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 //					donneeExtrait.setOperations(liste_opertation);
 //					System.out.println(donneeExtrait);
 //					donneeExtraits.add(donneeExtrait);
@@ -616,87 +658,482 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
 
 
-                    System.out.println(donneeExtrait);
+                        System.out.println(donneeExtrait);
                     /*donneeExtraits.add(donneeExtrait);
                     extraitBancaire.setDonneeExtraits(donneeExtraits);*/
 
-                    // !! avoire tawa firas t5edmet
-                   // !!!!!!!!!!!!!!!!!!!!
-                    //extraits.add(extraitBancaire);
+                        // !! avoire tawa firas t5edmet
+                        // !!!!!!!!!!!!!!!!!!!!
+                        //extraits.add(extraitBancaire);
 //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
 //					System.out.println("ok_total_mouvement="+ok_total_mouvement);
 //					System.out.println("debit_total_mouvement="+debit_total_mouvement);
 //					System.out.println("credit_total_mouvement="+credit_total_mouvement);
-                }
-                //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
-                if (ok_solde_crediteur){
-                    ok_solde_crediteur = false;
-                    System.out.println("------------------------------------------------------------");
-                    System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
-                    System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
-                    System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
+                    }
+                    //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+                    if (ok_solde_crediteur){
+                        ok_solde_crediteur = false;
+                        System.out.println("------------------------------------------------------------");
+                        System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
+                        System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
+                        System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
 
-                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
-                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
-
-
-
-                    System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
-                    System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
-
-                    System.out.println("IBAN =--------------------------"+IBAN);
-
-                    // convert "30 november 2021" to date 30 / 09 /2021
-                    DateTimeFormatter dateFormatFrench = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
-                    System.out.println("date_prelevement_extrait =----------------------"+date_prelevement_extrait);
-                    LocalDate localDate = LocalDate.parse(date_prelevement_extrait, dateFormatFrench);
-                    Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
-                    // insert the date object into the database here
-
-                    System.out.println(donneeExtrait);
-
-                    extraitBancaire.setDateExtrait(date);
+                        System.out.println("debit_total_mouvement="+debit_total_mouvement);
+                        System.out.println("credit_total_mouvement="+credit_total_mouvement);
 
 
 
-                    extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
-                    extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
+                        System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
+                        System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
 
-                    //donneeExtraits.add(operation_fin_tableau) ;
-                    donneeExtraits.add(donneeExtrait) ;
-                    extraitBancaire.setDonneeExtraits(donneeExtraits);
-                    System.out.println("debit_total_mouvement = "+debit_total_mouvement);
-                    System.out.println("credit_total_mouvement = "+credit_total_mouvement);
+                        System.out.println("IBAN =--------------------------"+IBAN);
 
-                    extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
-                    extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
+                        // convert "30 november 2021" to date 30 / 09 /2021
+                        DateTimeFormatter dateFormatFrench = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
+                        System.out.println("date_prelevement_extrait =----------------------"+date_prelevement_extrait);
+                        LocalDate localDate = LocalDate.parse(date_prelevement_extrait, dateFormatFrench);
+                        Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+                        // insert the date object into the database here
+
+                        System.out.println(donneeExtrait);
+
+                        extraitBancaire.setDateExtrait(date);
 
 
+
+                        extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
+                        extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
+
+                        //donneeExtraits.add(operation_fin_tableau) ;
+                        donneeExtraits.add(donneeExtrait) ;
+                        extraitBancaire.setDonneeExtraits(donneeExtraits);
+                        System.out.println("debit_total_mouvement = "+debit_total_mouvement);
+                        System.out.println("credit_total_mouvement = "+credit_total_mouvement);
+
+                        extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
+                        extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
 
 
 
 
-                    extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
 
-                    extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
-                    System.out.println(extraitBancaire);
-                    //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
-                    extraits.add(extraitBancaire);
-                    System.out.println(extraits);//break point
-                    extraitBancaire = new ExtraitBancaire() ;
-                    donneeExtraits=new ArrayList<>();
-                    ok_solde_crediteur=false ;
-                    donneeExtrait = new DonneeExtrait() ;
-                    //releveBancaire.setIban(IBAN);
+
+                        extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
+
+                        extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
+                        System.out.println(extraitBancaire);
+                        //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
+                        extraits.add(extraitBancaire);
+                        System.out.println(extraits);//break point
+                        extraitBancaire = new ExtraitBancaire() ;
+                        donneeExtraits=new ArrayList<>();
+                        ok_solde_crediteur=false ;
+                        donneeExtrait = new DonneeExtrait() ;
+                        //releveBancaire.setIban(IBAN);
+                    }
                 }
             }
+            releveBancaireDto.setIban(IBAN);
+            releveBancaireDto.setExtraits(extraits);
+            pdfDocument.close();
+            //fis.close();
+            //e5er push fel git 9bal directement integration template!
+
+        } finally {
+            if (pdfDocument != null) {
+                pdfDocument.close(); // Fermeture du document pour libérer les ressources
+            }
         }
-        releveBancaireDto.setIban(IBAN);
-        releveBancaireDto.setExtraits(extraits);
-        pdfDocument.close();
-        fis.close();
-        //e5er push fel git 9bal directement integration template!
+
+
+
+
+
     }
+
+//    recement utilisee aussi
+//    public void  extractListeOperationFromCicBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {
+//        int positionMax = util.getChaineMaxEspace().length() - util.getMaxEspaces() - 1 ;
+//        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
+//        File file = new File(pathFileUploaded) ;
+//        FileInputStream fis = new FileInputStream(file) ;
+//        PDDocument pdfDocument = PDDocument.load(fis);
+//        Splitter splitter = new Splitter();
+//        List<PDDocument> splitpages = splitter.split(pdfDocument);
+//        // pdfTextStripper = pdfReader
+//        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
+//        pdfTextStripper.setSortByPosition(true);
+//        pdfTextStripper.setAddMoreFormatting(true);
+//
+//
+//
+//
+//        String nameBank = "CIC" ;
+//        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+//        boolean ok = false ;int nombreLigneNonVide = 0 ;
+//
+//
+//        boolean ok_test_Releve_bancaire = false;
+//        boolean ok_test_format_releve_bancaire = false;
+//        boolean ok_test_head_array = false;
+//        boolean ok_test_debut_operation_array = false;
+//        String date_prelevement_extrait ="" ;
+//        String premier_ligne_solde_crediteur_au_date = "";
+//        String premier_ligne_credit_euro = "";
+//        String dernier_ligne_solde_crediteur_au_date = "";
+//        String dernier_ligne_credit_euro = "";
+//        boolean ok_test_date_valeur_operation = false;
+//        String date_valeur_operation = "";
+//        String debit_ou_credit = "" ;
+//        String liste_opertation="" ;
+//        String dateOperation = "";
+//        String date_valeur_Operation="";
+//        boolean ok_test_fin_page;
+//        boolean ok_total_mouvement = false;
+//        String debit_total_mouvement="";
+//        String credit_total_mouvement="";
+//        String IBAN = "" ;
+//        String dateOperation_precedente ="";
+//        String date_valeur_Operation_precedente ="";
+//        boolean ok_solde_crediteur = false ;
+//
+//
+//
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+//        DonneeExtrait donneeExtrait = new DonneeExtrait() ;
+//        ExtraitBancaire extraitBancaire = new ExtraitBancaire();
+//
+//
+//
+////		ArrayList<Operation>operationsArrayList = new ArrayList<>();
+//        List<ExtraitBancaire> extraits = new ArrayList<>();
+//        List<DonneeExtrait> donneeExtraits=new ArrayList<>();
+//
+//
+//
+//
+//        for (PDDocument page : splitpages) {
+//            int lastIndexDebitOrCredit = 0 ;
+////			System.out.println("..................................................");
+////			System.out.println(page);
+////			System.out.println("..................................................");
+//            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+//            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+//            ok_test_fin_page = false;
+//            ok_test_head_array = false;
+//            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+//                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+//                // split = diviser
+//                //.split("\\s+") = split par espace ou plusieurs espaces
+//                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
+//                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+//                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+//                System.out.println(chaine); //break point ici
+//                /***********************DEBUT DATA DE LA SOCIETE***************************/
+//                //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
+//                if (chaine.contains("RELEVE")){
+//                    ok_test_Releve_bancaire = true ;
+//                    System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
+//                }
+//                if (ok_test_Releve_bancaire  ){
+//                    System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+//                    if (chaine.contains("T-CONNECT")){
+//                        chaine=chaine.replace("T-CONNECT", "");
+//                        chaine= chaine.substring(0,chaine.length()-1);
+//                    }
+//                    System.out.println(chaine);
+//                    if (isValidFormatOfDateReleveBancaire(chaine)){
+//                        ok_test_format_releve_bancaire = true ;
+//                        date_prelevement_extrait = chaine;
+//                        System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
+//                        System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+//                    }
+//                }
+//                if (chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")){
+//                    ok_test_head_array = true ;
+//                    System.out.println("ok_test_head_array="+ok_test_head_array);
+//                }
+//                if (chaine.contains("SOLDE CREDITEUR AU")){
+//                    System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
+//                    System.out.println("chaine ="+chaine);
+//                }
+//                ///hethi fi awel tableau
+//                if (ok_total_mouvement==false){
+//                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[4]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[5])){
+//                        ok_test_debut_operation_array = true ;
+//                        premier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[4] ;
+//                        premier_ligne_credit_euro = arrayOfWordsPerLigne[5] ;
+//                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+//                        System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
+//                        System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
+//                        //ok_total_mouvement=!ok_total_mouvement;
+//                    }
+//                }
+//                ///hethi fi e5er tableau
+//                if (ok_total_mouvement==true){
+//                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]) &&  isValidSoldeCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1])){
+//                        //hethouma tawa
+//                        ok_solde_crediteur = true ;
+//                        ok_test_fin_page=true ;
+//                        liste_opertation = "" ;
+//                        //end of
+//                        ok_test_debut_operation_array = false ;
+//                        dernier_ligne_solde_crediteur_au_date = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] ;
+//                        dernier_ligne_credit_euro = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1] ;
+//                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+//                        System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
+//                        System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
+//                        ok_total_mouvement=false ;
+//                    }
+//                }
+//
+//                if (arrayOfWordsPerLigne.length>=3){
+//                    dateOperation = arrayOfWordsPerLigne[1] ;
+//                    date_valeur_Operation = arrayOfWordsPerLigne[2] ;
+//                }else {
+//                    dateOperation = "" ;
+//                    date_valeur_Operation = "" ;
+//                }
+//                if (chaine.contains("IBAN") && isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1))!=""){
+//                    //hethouma tawa
+//                    //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+//                    IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
+//
+//                    System.out.println("IBAN.........="+IBAN+"=");
+//                    // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+//                    //end of
+////                    ok_test_fin_page=true ;
+////                    liste_opertation = "" ;
+//                }
+//                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
+//                    if (liste_opertation.equals("") == false){
+//                        System.out.println("\n............................................................\n");
+//                        System.out.println("dateOperation_precedente="+dateOperation_precedente);
+//                        System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+//                        System.out.println("liste_opertation="+liste_opertation);
+//                        System.out.println("\n............................................................\n");
+//
+//                        donneeExtrait.setOperations(liste_opertation);
+//                        // factures
+//                        donneeExtrait.setFactures(new ArrayList<>());
+//                        donneeExtrait.setCommentairesFactures(new HashMap<>());
+//                        donneeExtrait.setValide(false);
+//
+//
+//
+//
+//                        //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
+//                        System.out.println(donneeExtraits);
+//                        //ahne lezemna nda5ouha lel base
+//                        donneeExtraits.add(donneeExtrait);
+//
+//                        System.out.println(donneeExtraits);
+//                        //!!!!
+//
+//
+//                        donneeExtrait=new DonneeExtrait();
+//                        //operationsArrayList=new ArrayList<Operation>();
+//                        liste_opertation = "" ;
+//                        System.out.println("liste_opertation="+liste_opertation);
+//                    }
+//                    ok_test_date_valeur_operation=true ;
+//                    //date_valeur_operation = dateOperation ;//02/11/2020
+//                    dateOperation_precedente = dateOperation ;
+//                    date_valeur_Operation_precedente = date_valeur_Operation;
+//
+//                    debit_ou_credit = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
+//                    System.out.println("deb = "+debit_ou_credit);
+//
+//                    if (debit_ou_credit == null || debit_ou_credit.trim().isEmpty()) {
+//                        System.out.println("La variable debitOuCredit est vide ou contient seulement des espaces.");
+//                    }
+//                    int position = arrayOfLignesContentPage[i].indexOf(debit_ou_credit);
+//                    System.out.println("position***** = "+position);
+//
+//
+//
+//
+//
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//                    //!!!!!!!!!!
+//                    int index_date_operation = getPositionOfDateOperation_CIC_BANK(arrayOfWordsPerLigne,date_prelevement_extrait);
+//                    if (index_date_operation!=-1){
+//                        // parametre yetbedlou fel arrayOfWordsPerLigne khater mech nafes display normalemeent
+//                         liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-2)+"***";
+//                         System.out.println("liste_opertation="+liste_opertation);
+//                    }
+//
+//
+//                    //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
+//
+//
+//
+//
+//                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+//                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
+//                    // factures
+//                    donneeExtrait.setFactures(new ArrayList<>());
+//                    donneeExtrait.setCommentairesFactures(new HashMap<>());
+//                    donneeExtrait.setValide(false);
+//
+//                    if (position!=-1){
+//                        if (position<=positionMax){ // inferieur strisctement
+//                            donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+//                            System.out.println("position!=-1 debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+//                            donneeExtrait.setCredit(0.0);
+//                            lastIndexDebitOrCredit = 1 ;
+//                        }
+//                        if (position>positionMax){
+//                            System.out.println("position>positionMax debit ou credit="+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+//
+//                            donneeExtrait.setDebit(0.0);
+//                            donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+//                            lastIndexDebitOrCredit = -1 ;
+//                        }
+//                        if (position==positionMax){
+//                            System.out.println("egeauxx!!!!");
+//                        }
+//                    }else{
+//                        System.out.println("position = -1"+position);//break pointPAIEMENT CB 1910 PARIS
+//                        System.out.println("position debit ou credit***=----"+debit_ou_credit);//break pointPAIEMENT CB 1910 PARIS
+//
+//                    }
+//
+//                }
+//                if (chaine.contains("Information sur la protection des comptes :") || chaine.contains(("(GE) : protégé par la Garantie de l'Etat"))){
+//                    ok_test_fin_page=true;
+//                    System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
+//                }
+//                if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
+//                    if ((chaine.contains("Date Date valeur Opération Débit EUROS Crédit EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("Total des mouvements")==false) && (chaine.contains("IBAN")==false)){
+//                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
+//                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
+//                        System.out.println("liste_opertation="+liste_opertation);//break point
+//                    }
+//                }
+//                //lezemni ntayah win toufa l page
+//
+//                if (chaine.contains("Total des mouvements")){
+//                    ok_total_mouvement=true;
+//                    debit_total_mouvement=arrayOfWordsPerLigne[4];
+//                    credit_total_mouvement=arrayOfWordsPerLigne[5];
+//                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
+//                    //hahahahah
+//                    System.out.println("operations="+liste_opertation);
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//                    System.out.println("dateOperation_precedente="+dateOperation_precedente);
+//                    System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+//                    System.out.println("dateOperation="+dateOperation);
+//                    System.out.println("date_valeur_Operation="+date_valeur_Operation);
+//                    System.out.println("lastIndexDebitOrCredit = "+lastIndexDebitOrCredit);
+//                    donneeExtrait = new DonneeExtrait() ;
+//                    donneeExtrait.setOperations(liste_opertation);
+//                    //hahahahha
+//                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+//                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
+//
+//                    if (lastIndexDebitOrCredit==1){ // inferieur strisctement
+//                        donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+//                        donneeExtrait.setCredit(0.0);
+//                        lastIndexDebitOrCredit = 1 ;
+//                    }
+//                    if (lastIndexDebitOrCredit==-1){
+//                        donneeExtrait.setDebit(0.0);
+//                        donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+//                        lastIndexDebitOrCredit = -1 ;
+//                    }
+//                    System.out.println("donneeExtrait = "+donneeExtrait);
+//                    //					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+////					donneeExtrait.setOperations(liste_opertation);
+////					System.out.println(donneeExtrait);
+////					donneeExtraits.add(donneeExtrait);
+//
+////					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+//
+//
+//
+//                    System.out.println(donneeExtrait);
+//                    /*donneeExtraits.add(donneeExtrait);
+//                    extraitBancaire.setDonneeExtraits(donneeExtraits);*/
+//
+//                    // !! avoire tawa firas t5edmet
+//                   // !!!!!!!!!!!!!!!!!!!!
+//                    //extraits.add(extraitBancaire);
+////					mmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+////					System.out.println("ok_total_mouvement="+ok_total_mouvement);
+////					System.out.println("debit_total_mouvement="+debit_total_mouvement);
+////					System.out.println("credit_total_mouvement="+credit_total_mouvement);
+//                }
+//                //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+//                if (ok_solde_crediteur){
+//                    ok_solde_crediteur = false;
+//                    System.out.println("------------------------------------------------------------");
+//                    System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
+//                    System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
+//                    System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
+//
+//                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
+//                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
+//
+//
+//
+//                    System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
+//                    System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
+//
+//                    System.out.println("IBAN =--------------------------"+IBAN);
+//
+//                    // convert "30 november 2021" to date 30 / 09 /2021
+//                    DateTimeFormatter dateFormatFrench = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
+//                    System.out.println("date_prelevement_extrait =----------------------"+date_prelevement_extrait);
+//                    LocalDate localDate = LocalDate.parse(date_prelevement_extrait, dateFormatFrench);
+//                    Date date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+//                    // insert the date object into the database here
+//
+//                    System.out.println(donneeExtrait);
+//
+//                    extraitBancaire.setDateExtrait(date);
+//
+//
+//
+//                    extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
+//                    extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
+//
+//                    //donneeExtraits.add(operation_fin_tableau) ;
+//                    donneeExtraits.add(donneeExtrait) ;
+//                    extraitBancaire.setDonneeExtraits(donneeExtraits);
+//                    System.out.println("debit_total_mouvement = "+debit_total_mouvement);
+//                    System.out.println("credit_total_mouvement = "+credit_total_mouvement);
+//
+//                    extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
+//                    extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
+//
+//
+//
+//
+//
+//
+//                    extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
+//
+//                    extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
+//                    System.out.println(extraitBancaire);
+//                    //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
+//                    extraits.add(extraitBancaire);
+//                    System.out.println(extraits);//break point
+//                    extraitBancaire = new ExtraitBancaire() ;
+//                    donneeExtraits=new ArrayList<>();
+//                    ok_solde_crediteur=false ;
+//                    donneeExtrait = new DonneeExtrait() ;
+//                    //releveBancaire.setIban(IBAN);
+//                }
+//            }
+//        }
+//        releveBancaireDto.setIban(IBAN);
+//        releveBancaireDto.setExtraits(extraits);
+//        pdfDocument.close();
+//        fis.close();
+//        //e5er push fel git 9bal directement integration template!
+//    }
 
     private String isValidIBAN(String operationPerLigne) {
         int index = operationPerLigne.lastIndexOf("FR");
@@ -813,151 +1250,245 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
         }
         return false ;
     }
+    public static void extractDataFromCicBank(Util util, InputStream fileInputStream) throws IOException {
+        PDDocument pdfDocument = null;
+        try {
+            pdfDocument = PDDocument.load(fileInputStream);
+            Splitter splitter = new Splitter();
+            List<PDDocument> splitPages = splitter.split(pdfDocument);
+            PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper();
+            pdfTextStripper.setSortByPosition(true);
+            pdfTextStripper.setAddMoreFormatting(true);
 
-    public static void extractDataFromCicBank (Util util,String pathFileUploaded)throws IOException {
-        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
-        File file = new File(pathFileUploaded) ;
-        FileInputStream fis = new FileInputStream(file) ;
-        PDDocument pdfDocument = PDDocument.load(fis);
-        Splitter splitter = new Splitter();
-        List<PDDocument> splitpages = splitter.split(pdfDocument);
-        // pdfTextStripper = pdfReader
-        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
-        pdfTextStripper.setSortByPosition(true);
-        pdfTextStripper.setAddMoreFormatting(true);
+            boolean ok = false;
+            int nombreLigneNonVide = 0;
+            String nomSociete = "";
+            Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
+            int maxEspaces = 0;
+            String chaine_max_espace = "";
 
+            for (PDDocument page : splitPages) {
+                String contentPage = pdfTextStripper.getText(page);
+                String[] arrayOfLignesContentPage = contentPage.split("\n");
 
+                for (String line : arrayOfLignesContentPage) {
+                    String[] arrayOfWordsPerLigne = line.split("\\s+");
+                    String chaine = String.join(" ", arrayOfWordsPerLigne);
+                    Matcher matcher = pattern.matcher(line);
 
+                    if (arrayOfWordsPerLigne.length >= 3) {
+                        String dateOperation = arrayOfWordsPerLigne[1];
+                        String date_valeur_Operation = arrayOfWordsPerLigne[2];
 
-        String nameBank = "CIC" ;
-        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
-        boolean ok = false ;int nombreLigneNonVide = 0 ;
-        String nomSociete = "" ;
-        String dateOperation = "" ;
-        String date_valeur_Operation = "" ;
+                        if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) && matcher.find()) {
+                            int count = matcher.group().length();
+                            if (count > maxEspaces) {
+                                maxEspaces = count;
+                                chaine_max_espace = line;
+                            }
+                        }
+                    }
 
-        // Expression régulière pour trouver les espaces à partir de la fin de la chaîne jusqu'au premier caractère non-espace
-        Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
-        int maxEspaces = 0; // Variable pour stocker le maximum nombre d'espaces trouvés
-        String chaine_max_espace = "" ;
-        for (PDDocument page : splitpages) {
-//			System.out.println("..................................................");
-//			System.out.println(page);
-//			System.out.println("..................................................");
-            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
-            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
-            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
-
-                /// hethi normalement eli bech na3diha lel matcher !!!
-                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
-                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");///men e5er l page jusqu"a l awel caractere trouveè
-                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
-                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
-                if (arrayOfWordsPerLigne.length>=3){
-                    dateOperation = arrayOfWordsPerLigne[1] ;
-                    date_valeur_Operation = arrayOfWordsPerLigne[2] ;
-                }else {
-                    dateOperation = "" ;
-                    date_valeur_Operation = "" ;
-                }
-                // je peux faire la somme en meme temps
-                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) ){
-                    System.out.println("---------------------------------------"+arrayOfLignesContentPage[i].length());
-                    //lezemni n3adi chaine eli meme exemple que que sublime texte e!!!
-                    Matcher matcher = pattern.matcher(arrayOfLignesContentPage[i]);
-                    // Si des espaces ont été trouvés
-                    if (matcher.find()) {
-                        int count = matcher.group().length();
-                        // Mettre à jour le maximum nombre d'espaces trouvés
-                        if (count > maxEspaces) {
-                            maxEspaces = count;
-                            chaine_max_espace = arrayOfLignesContentPage[i] ;
+                    if ((chaine.contains("CIC") || chaine.contains("CREDIT INDUSTRIEL ET COMMERCIAL")) && !ok) {
+                        ok = true;
+                    }
+                    if (ok && !chaine.isBlank()) {
+                        nombreLigneNonVide++;
+                        if (nombreLigneNonVide == 6 && nomSociete.isBlank()) {
+                            nomSociete = chaine;
                         }
                     }
                 }
+                page.close(); // Important to close each split page document
+            }
 
-                /***********************DEBUT NOM DE LA SOCIETE***************************/
-                if ((chaine.contains("CIC") || chaine.contains(("CREDIT INDUSTRIEL ET COMMERCIAL")) ) && (ok==false)){//BREAK POINT
-                    ok = true ;
-                }
-                if (ok){
-                    // il faut compter les nombres de ligne remplie par des caracteres !
-                    if (arrayOfWordsPerLigne.length!=0){
-                        nombreLigneNonVide = nombreLigneNonVide +1 ;
-                    }
-                    if ((nombreLigneNonVide == 6 ) && (nomSociete.equals(""))){
-                        nomSociete = chaine ;
-                        System.out.println("nomSociete="+nomSociete);
-                        //return nomSociete ;
-                    }
-                }
-                /***********************FIN NOM DE LA SOCIETE***************************/
-
-
-
-
-
+            util.setNameSociete(nomSociete);
+            util.setMaxEspaces(maxEspaces);
+            util.setChaineMaxEspace(chaine_max_espace);
+            pdfDocument.close();
+        } finally {
+            if (pdfDocument != null) {
+                pdfDocument.close(); // Ensure to close the main document
             }
         }
-        System.out.println("Le maximum nombre d'espaces trouvés de la fin de page jusqu'a premier caratere est !  est : " + maxEspaces);
-
-        pdfDocument.close();
-        fis.close();
-        util.setNameSociete(nomSociete);
-        util.setMaxEspaces(maxEspaces);
-        util.setChaineMaxEspace(chaine_max_espace);
-
     }
+    //    recement utilisee bro
+//    public static void extractDataFromCicBank (Util util,String pathFileUploaded)throws IOException {
+//        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
+//        File file = new File(pathFileUploaded) ;
+//        FileInputStream fis = new FileInputStream(file) ;
+//        PDDocument pdfDocument = PDDocument.load(fis);
+//        Splitter splitter = new Splitter();
+//        List<PDDocument> splitpages = splitter.split(pdfDocument);
+//        // pdfTextStripper = pdfReader
+//        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
+//        pdfTextStripper.setSortByPosition(true);
+//        pdfTextStripper.setAddMoreFormatting(true);
+//
+//
+//
+//
+//        String nameBank = "CIC" ;
+//        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+//        boolean ok = false ;int nombreLigneNonVide = 0 ;
+//        String nomSociete = "" ;
+//        String dateOperation = "" ;
+//        String date_valeur_Operation = "" ;
+//
+//        // Expression régulière pour trouver les espaces à partir de la fin de la chaîne jusqu'au premier caractère non-espace
+//        Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
+//        int maxEspaces = 0; // Variable pour stocker le maximum nombre d'espaces trouvés
+//        String chaine_max_espace = "" ;
+//        for (PDDocument page : splitpages) {
+////			System.out.println("..................................................");
+////			System.out.println(page);
+////			System.out.println("..................................................");
+//            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+//            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+//            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+//
+//                /// hethi normalement eli bech na3diha lel matcher !!!
+//                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+//                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");///men e5er l page jusqu"a l awel caractere trouveè
+//                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+//                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+//                if (arrayOfWordsPerLigne.length>=3){
+//                    dateOperation = arrayOfWordsPerLigne[1] ;
+//                    date_valeur_Operation = arrayOfWordsPerLigne[2] ;
+//                }else {
+//                    dateOperation = "" ;
+//                    date_valeur_Operation = "" ;
+//                }
+//                // je peux faire la somme en meme temps
+//                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) ){
+//                    System.out.println("---------------------------------------"+arrayOfLignesContentPage[i].length());
+//                    //lezemni n3adi chaine eli meme exemple que que sublime texte e!!!
+//                    Matcher matcher = pattern.matcher(arrayOfLignesContentPage[i]);
+//                    // Si des espaces ont été trouvés
+//                    if (matcher.find()) {
+//                        int count = matcher.group().length();
+//                        // Mettre à jour le maximum nombre d'espaces trouvés
+//                        if (count > maxEspaces) {
+//                            maxEspaces = count;
+//                            chaine_max_espace = arrayOfLignesContentPage[i] ;
+//                        }
+//                    }
+//                }
+//
+//                /***********************DEBUT NOM DE LA SOCIETE***************************/
+//                if ((chaine.contains("CIC") || chaine.contains(("CREDIT INDUSTRIEL ET COMMERCIAL")) ) && (ok==false)){//BREAK POINT
+//                    ok = true ;
+//                }
+//                if (ok){
+//                    // il faut compter les nombres de ligne remplie par des caracteres !
+//                    if (arrayOfWordsPerLigne.length!=0){
+//                        nombreLigneNonVide = nombreLigneNonVide +1 ;
+//                    }
+//                    if ((nombreLigneNonVide == 6 ) && (nomSociete.equals(""))){
+//                        nomSociete = chaine ;
+//                        System.out.println("nomSociete="+nomSociete);
+//                        //return nomSociete ;
+//                    }
+//                }
+//                /***********************FIN NOM DE LA SOCIETE***************************/
+//
+//
+//
+//
+//
+//            }
+//        }
+//        System.out.println("Le maximum nombre d'espaces trouvés de la fin de page jusqu'a premier caratere est !  est : " + maxEspaces);
+//
+//        pdfDocument.close();
+//        fis.close();
+//        util.setNameSociete(nomSociete);
+//        util.setMaxEspaces(maxEspaces);
+//        util.setChaineMaxEspace(chaine_max_espace);
+//
+//    }
+    public static String findNameBank(InputStream fileInputStream) throws IOException {
+        String nameBank = "";
+        PDDocument pdfDocument = null;
+        try {
+            pdfDocument = PDDocument.load(fileInputStream);
+            Splitter splitter = new Splitter();
+            List<PDDocument> splitPages = splitter.split(pdfDocument);
+            PDFTextStripper pdfTextStripper = new PDFTextStripper();
 
-    public static String findNameBank (String pathFileUploaded)throws IOException {
-        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
-        File file = new File(pathFileUploaded) ;
-        FileInputStream fis = new FileInputStream(file) ;
-        PDDocument pdfDocument = PDDocument.load(fis);
-        Splitter splitter = new Splitter();
-        List<PDDocument> splitpages = splitter.split(pdfDocument);
-        // pdfTextStripper = pdfReader
-        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
-        pdfTextStripper.setSortByPosition(true);
-        pdfTextStripper.setAddMoreFormatting(true);
-        String nameBank = "" ;
-        for (PDDocument page : splitpages) {
-//			System.out.println("..................................................");
-//			System.out.println(page);
-//			System.out.println("..................................................");
-            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
-            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
-            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+            for (PDDocument page : splitPages) {
+                String contentPage = pdfTextStripper.getText(page);
+                String[] arrayOfLignesContentPage = contentPage.split("\n");
+                for (String line : arrayOfLignesContentPage) {
+                    if (line.contains("CIC")) {
+                        nameBank = "CIC PARIS KLEBER";
+                        return nameBank;
+                    }
+                    if (line.contains("banquepopulaire.fr")) {
+                        nameBank = "BP";
+                        return nameBank;
+                    }
+                }
+                page.close(); // It's important to close each page document to release resources
+            }
+            pdfDocument.close(); // Make sure to close the main document as well
 
-                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
-                // split = diviser
-                //.split("\\s+") = split par espace ou plusieurs espaces
-                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
-                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
-                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
-                if (chaine.contains("CIC")){//BREAK POINT
-                    pdfDocument.close();
-                    fis.close();
-                    nameBank = "CIC PARIS KLEBER" ;//BREAK POINT
-                    return nameBank ;// Nraj3ou l nom kemel emte3 l agence par exemple "CIC PARIS KLEBER"
-                    //System.out.println("BANK ---CIC PARIS KLEBER--- BANK");
-                    //System.out.println("nameBank"+nameBank);
-                }
-                if (chaine.contains("banquepopulaire.fr")){//BREAK POINT
-                    pdfDocument.close();
-                    fis.close();
-                    nameBank = "BP" ;//BREAK POINT
-                    return nameBank ;//BREAK POINT
-                    //System.out.println("BANK ---CIC PARIS KLEBER--- BANK");
-                    //System.out.println("nameBank"+nameBank);
-                }
+        } finally {
+            if (pdfDocument != null) {
+                pdfDocument.close(); // Make sure to close the main document as well
             }
         }
-        pdfDocument.close();
-        fis.close();
-        return nameBank ;
-
-    }
+        return nameBank;
+    }//recent used
+//    public static String findNameBank (String pathFileUploaded)throws IOException {
+//        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
+//        File file = new File(pathFileUploaded) ;
+//        FileInputStream fis = new FileInputStream(file) ;
+//        PDDocument pdfDocument = PDDocument.load(fis);
+//        Splitter splitter = new Splitter();
+//        List<PDDocument> splitpages = splitter.split(pdfDocument);
+//        // pdfTextStripper = pdfReader
+//        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
+//        pdfTextStripper.setSortByPosition(true);
+//        pdfTextStripper.setAddMoreFormatting(true);
+//        String nameBank = "" ;
+//        for (PDDocument page : splitpages) {
+////			System.out.println("..................................................");
+////			System.out.println(page);
+////			System.out.println("..................................................");
+//            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+//            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+//            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+//
+//                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+//                // split = diviser
+//                //.split("\\s+") = split par espace ou plusieurs espaces
+//                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
+//                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+//                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+//                if (chaine.contains("CIC")){//BREAK POINT
+//                    pdfDocument.close();
+//                    fis.close();
+//                    nameBank = "CIC PARIS KLEBER" ;//BREAK POINT
+//                    return nameBank ;// Nraj3ou l nom kemel emte3 l agence par exemple "CIC PARIS KLEBER"
+//                    //System.out.println("BANK ---CIC PARIS KLEBER--- BANK");
+//                    //System.out.println("nameBank"+nameBank);
+//                }
+//                if (chaine.contains("banquepopulaire.fr")){//BREAK POINT
+//                    pdfDocument.close();
+//                    fis.close();
+//                    nameBank = "BP" ;//BREAK POINT
+//                    return nameBank ;//BREAK POINT
+//                    //System.out.println("BANK ---CIC PARIS KLEBER--- BANK");
+//                    //System.out.println("nameBank"+nameBank);
+//                }
+//            }
+//        }
+//        pdfDocument.close();
+//        fis.close();
+//        return nameBank ;
+//
+//    }
 
 //    private static String getPathFileUploaded(MultipartFile file) {
 //        MultipartFile file1 = file; // Your MultipartFile object
@@ -996,47 +1527,47 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
 
 
 //    recement utilisee !!!
-//    private static String getPathFileUploaded(MultipartFile file) {
-//        MultipartFile file1 = file; // Your MultipartFile object
-//        String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
-//        String uploadedFilePath = null;
-//        try {
-//            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
-//            // Write the contents of the MultipartFile to the target file
-//            Files.write(target, file1.getBytes());
-//            // Get the path of the uploaded file
-//            uploadedFilePath = target.toAbsolutePath().toString();
-//            // Print the uploaded file path
-//            System.out.println("Uploaded file path: " + uploadedFilePath);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            // Handle the exception or throw a custom exception
-//        }
-//        return uploadedFilePath; // Return the uploaded file path or null
-//    }
-    private String getPathFileUploaded(MultipartFile file) throws IOException {
-        // Créer un fichier temporaire
-        Path tempFile = Files.createTempFile("upload-", file.getOriginalFilename());
-        logger.info("Fichier temporaire créé : {}", tempFile.toString());
-
-        // Vérifier si le fichier existe et est lisible
-        if(Files.exists(tempFile) && Files.isReadable(tempFile)) {
-            logger.info("Le fichier temporaire existe et est lisible");
-        } else {
-            logger.error("Le fichier temporaire n'existe pas ou n'est pas lisible");
+    private static String getPathFileUploaded(MultipartFile file) {
+        MultipartFile file1 = file; // Your MultipartFile object
+        String uploadDir = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\src\\main\\resources\\Uploaded_PDF";
+        String uploadedFilePath = null;
+        try {
+            Path target = Paths.get(uploadDir, file1.getOriginalFilename());
+            // Write the contents of the MultipartFile to the target file
+            Files.write(target, file1.getBytes());
+            // Get the path of the uploaded file
+            uploadedFilePath = target.toAbsolutePath().toString();
+            // Print the uploaded file path
+            System.out.println("Uploaded file path: " + uploadedFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Handle the exception or throw a custom exception
         }
-
-        file.transferTo(tempFile);
-
-        // Télécharger le fichier sur Firebase et obtenir l'URL
-        String firebaseUrl = fileUploader.uploadFile(tempFile, file.getOriginalFilename());
-
-        // Supprimer le fichier temporaire si nécessaire
-        Files.delete(tempFile);
-        logger.info("Fichier temporaire supprimé");
-
-        return firebaseUrl; // Retourner l'URL du fichier sur Firebase
+        return uploadedFilePath; // Return the uploaded file path or null
     }
+//    private String getPathFileUploaded(MultipartFile file) throws IOException {
+//        // Créer un fichier temporaire
+//        Path tempFile = Files.createTempFile("upload-", file.getOriginalFilename());
+//        logger.info("Fichier temporaire créé : {}", tempFile.toString());
+//
+//        // Vérifier si le fichier existe et est lisible
+//        if(Files.exists(tempFile) && Files.isReadable(tempFile)) {
+//            logger.info("Le fichier temporaire existe et est lisible");
+//        } else {
+//            logger.error("Le fichier temporaire n'existe pas ou n'est pas lisible");
+//        }
+//
+//        file.transferTo(tempFile);
+//
+//        // Télécharger le fichier sur Firebase et obtenir l'URL
+//        String firebaseUrl = fileUploader.uploadFile(tempFile, file.getOriginalFilename());
+//
+//        // Supprimer le fichier temporaire si nécessaire
+//        Files.delete(tempFile);
+//        logger.info("Fichier temporaire supprimé");
+//
+//        return firebaseUrl; // Retourner l'URL du fichier sur Firebase
+//    }
 
 
 
@@ -1070,473 +1601,948 @@ public class ReleveBancaireServiceImpl implements ReleveBancaireService {
             throw new IllegalArgumentException("Invalid input format: " + value, e);
         }
     }
+    public static void extractDataFromPopBank(Util util, InputStream fileInputStream) throws IOException {
+        PDDocument pdfDocument = null;
+        try {
+            pdfDocument = PDDocument.load(fileInputStream);
+            Splitter splitter = new Splitter();
+            List<PDDocument> splitPages = splitter.split(pdfDocument);
+            PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper();
+            pdfTextStripper.setSortByPosition(true);
+            pdfTextStripper.setAddMoreFormatting(true);
 
-    public static void extractDataFromPopBank (Util util,String pathFileUploaded)throws IOException {
-        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
-        File file = new File(pathFileUploaded) ;
-        FileInputStream fis = new FileInputStream(file) ;
-        PDDocument pdfDocument = PDDocument.load(fis);
-        Splitter splitter = new Splitter();
-        List<PDDocument> splitpages = splitter.split(pdfDocument);
-        // pdfTextStripper = pdfReader
-        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
-        pdfTextStripper.setSortByPosition(true);
-        pdfTextStripper.setAddMoreFormatting(true);
+            String nameBank = "banquepopulaire.fr";
+            boolean ok = false;
+            int nombreLigneNonVide = 0;
+            String nomSociete = "";
+            String dateOperation = "";
+            String date_valeur_Operation = "";
+            String anneeOperation = "";
+            Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
+            int maxEspaces = 0;
+            String chaine_max_espace = "";
 
-
-
-
-        String nameBank = "banquepopulaire.fr" ;
-        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
-        boolean ok = false ;int nombreLigneNonVide = 0 ;
-        String nomSociete = "" ;
-        String dateOperation = "" ;
-        String date_valeur_Operation = "" ;
-        String anneeOperation = "" ;
-        // Expression régulière pour trouver les espaces à partir de la fin de la chaîne jusqu'au premier caractère non-espace
-        Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
-        int maxEspaces = 0; // Variable pour stocker le maximum nombre d'espaces trouvés
-        String chaine_max_espace = "" ;
-        for (PDDocument page : splitpages) {
+            for (PDDocument page : splitPages) {
 //			System.out.println("..................................................");
 //			System.out.println(page);
 //			System.out.println("..................................................");
-            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
-            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
-            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+                String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+                String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+                for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
 
-                /// hethi normalement eli bech na3diha lel matcher !!!
-                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
-                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");///men e5er l page jusqu"a l awel caractere trouveè
-                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
-                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
-                if (arrayOfWordsPerLigne.length>=8){
-                    dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+anneeOperation ;
-                    date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]+'/'+anneeOperation  ;
-                }else {
-                    dateOperation = "" ;
-                    date_valeur_Operation = "" ;
-                }
-                // je peux faire la somme en meme temps
-                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) ){
-                    System.out.println("---------------------------------------"+arrayOfLignesContentPage[i].length());
-                    //lezemni n3adi chaine eli meme exemple que que sublime texte e!!!
-                    Matcher matcher = pattern.matcher(arrayOfLignesContentPage[i]);
-                    // Si des espaces ont été trouvés
-                    if (matcher.find()) {
-                        int count = matcher.group().length();
-                        // Mettre à jour le maximum nombre d'espaces trouvés
-                        if (count > maxEspaces) {
-                            maxEspaces = count;
-                            chaine_max_espace = arrayOfLignesContentPage[i] ;
+                    /// hethi normalement eli bech na3diha lel matcher !!!
+                    System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+                    String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");///men e5er l page jusqu"a l awel caractere trouveè
+                    System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+                    String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+                    if (arrayOfWordsPerLigne.length>=8){
+                        dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+anneeOperation ;
+                        date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]+'/'+anneeOperation  ;
+                    }else {
+                        dateOperation = "" ;
+                        date_valeur_Operation = "" ;
+                    }
+                    // je peux faire la somme en meme temps
+                    if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) ){
+                        System.out.println("---------------------------------------"+arrayOfLignesContentPage[i].length());
+                        //lezemni n3adi chaine eli meme exemple que que sublime texte e!!!
+                        Matcher matcher = pattern.matcher(arrayOfLignesContentPage[i]);
+                        // Si des espaces ont été trouvés
+                        if (matcher.find()) {
+                            int count = matcher.group().length();
+                            // Mettre à jour le maximum nombre d'espaces trouvés
+                            if (count > maxEspaces) {
+                                maxEspaces = count;
+                                chaine_max_espace = arrayOfLignesContentPage[i] ;
+                            }
                         }
                     }
-                }
 
-                /***********************DEBUT NOM DE LA SOCIETE***************************/
-                if ((chaine.contains(nameBank)) && (ok==false)){//BREAK POINT
-                    ok = true ;
-                }
-                if (ok){
-                    // il faut compter les nombres de ligne remplie par des caracteres !
-                    if (arrayOfWordsPerLigne.length!=0){
-                        nombreLigneNonVide = nombreLigneNonVide +1 ;
+                    /***********************DEBUT NOM DE LA SOCIETE***************************/
+                    if ((chaine.contains(nameBank)) && (ok==false)){//BREAK POINT
+                        ok = true ;
                     }
-                    if ((nombreLigneNonVide == 4 ) && (nomSociete.equals(""))){
-                        nomSociete = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1); ;
-                        System.out.println("nomSociete="+nomSociete);
-                        //return nomSociete ;
+                    if (ok){
+                        // il faut compter les nombres de ligne remplie par des caracteres !
+                        if (arrayOfWordsPerLigne.length!=0){
+                            nombreLigneNonVide = nombreLigneNonVide +1 ;
+                        }
+                        if ((nombreLigneNonVide == 4 ) && (nomSociete.equals(""))){
+                            nomSociete = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1); ;
+                            System.out.println("nomSociete="+nomSociete);
+                            //return nomSociete ;
+                        }
                     }
+                    /***********************FIN NOM DE LA SOCIETE***************************/
+                    if ((chaine.contains("RELEVE")) && anneeOperation.equals("")){//BREAK POINT
+                        anneeOperation= arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1].substring(6,10);
+                        System.out.println("anneeOperation="+anneeOperation);
+                    }
+
+
+
+
                 }
-                /***********************FIN NOM DE LA SOCIETE***************************/
-                if ((chaine.contains("RELEVE")) && anneeOperation.equals("")){//BREAK POINT
-                    anneeOperation= arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1].substring(6,10);
-                    System.out.println("anneeOperation="+anneeOperation);
-                }
+            }
 
+            util.setNameSociete(nomSociete);
+            util.setMaxEspaces(maxEspaces);
+            util.setChaineMaxEspace(chaine_max_espace);
+            pdfDocument.close();
 
-
-
+        } finally {
+            if (pdfDocument != null) {
+                pdfDocument.close();
             }
         }
-        System.out.println("Le maximum nombre d'espaces trouvés de la fin de page jusqu'a premier caratere est !  est : " + maxEspaces);
-
-        pdfDocument.close();
-        fis.close();
-        util.setNameSociete(nomSociete);
-        util.setMaxEspaces(maxEspaces);
-        util.setChaineMaxEspace(chaine_max_espace);
-
     }
 
-    public void  extractListeOperationFromPopBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {
+//    recement utilisee zeda
+//    public static void extractDataFromPopBank (Util util,String pathFileUploaded)throws IOException {
+//        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
+//        File file = new File(pathFileUploaded) ;
+//        FileInputStream fis = new FileInputStream(file) ;
+//        PDDocument pdfDocument = PDDocument.load(fis);
+//        Splitter splitter = new Splitter();
+//        List<PDDocument> splitpages = splitter.split(pdfDocument);
+//        // pdfTextStripper = pdfReader
+//        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
+//        pdfTextStripper.setSortByPosition(true);
+//        pdfTextStripper.setAddMoreFormatting(true);
+//
+//
+//
+//
+//        String nameBank = "banquepopulaire.fr" ;
+//        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+//        boolean ok = false ;int nombreLigneNonVide = 0 ;
+//        String nomSociete = "" ;
+//        String dateOperation = "" ;
+//        String date_valeur_Operation = "" ;
+//        String anneeOperation = "" ;
+//        // Expression régulière pour trouver les espaces à partir de la fin de la chaîne jusqu'au premier caractère non-espace
+//        Pattern pattern = Pattern.compile("\\s+(?!.*\\s)");
+//        int maxEspaces = 0; // Variable pour stocker le maximum nombre d'espaces trouvés
+//        String chaine_max_espace = "" ;
+//        for (PDDocument page : splitpages) {
+////			System.out.println("..................................................");
+////			System.out.println(page);
+////			System.out.println("..................................................");
+//            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+//            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+//            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+//
+//                /// hethi normalement eli bech na3diha lel matcher !!!
+//                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+//                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");///men e5er l page jusqu"a l awel caractere trouveè
+//                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+//                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+//                if (arrayOfWordsPerLigne.length>=8){
+//                    dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+anneeOperation ;
+//                    date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2]+'/'+anneeOperation  ;
+//                }else {
+//                    dateOperation = "" ;
+//                    date_valeur_Operation = "" ;
+//                }
+//                // je peux faire la somme en meme temps
+//                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation) ){
+//                    System.out.println("---------------------------------------"+arrayOfLignesContentPage[i].length());
+//                    //lezemni n3adi chaine eli meme exemple que que sublime texte e!!!
+//                    Matcher matcher = pattern.matcher(arrayOfLignesContentPage[i]);
+//                    // Si des espaces ont été trouvés
+//                    if (matcher.find()) {
+//                        int count = matcher.group().length();
+//                        // Mettre à jour le maximum nombre d'espaces trouvés
+//                        if (count > maxEspaces) {
+//                            maxEspaces = count;
+//                            chaine_max_espace = arrayOfLignesContentPage[i] ;
+//                        }
+//                    }
+//                }
+//
+//                /***********************DEBUT NOM DE LA SOCIETE***************************/
+//                if ((chaine.contains(nameBank)) && (ok==false)){//BREAK POINT
+//                    ok = true ;
+//                }
+//                if (ok){
+//                    // il faut compter les nombres de ligne remplie par des caracteres !
+//                    if (arrayOfWordsPerLigne.length!=0){
+//                        nombreLigneNonVide = nombreLigneNonVide +1 ;
+//                    }
+//                    if ((nombreLigneNonVide == 4 ) && (nomSociete.equals(""))){
+//                        nomSociete = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1); ;
+//                        System.out.println("nomSociete="+nomSociete);
+//                        //return nomSociete ;
+//                    }
+//                }
+//                /***********************FIN NOM DE LA SOCIETE***************************/
+//                if ((chaine.contains("RELEVE")) && anneeOperation.equals("")){//BREAK POINT
+//                    anneeOperation= arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1].substring(6,10);
+//                    System.out.println("anneeOperation="+anneeOperation);
+//                }
+//
+//
+//
+//
+//            }
+//        }
+//        System.out.println("Le maximum nombre d'espaces trouvés de la fin de page jusqu'a premier caratere est !  est : " + maxEspaces);
+//
+//        pdfDocument.close();
+//        fis.close();
+//        util.setNameSociete(nomSociete);
+//        util.setMaxEspaces(maxEspaces);
+//        util.setChaineMaxEspace(chaine_max_espace);
+//
+//    }
+
+
+    public void  extractListeOperationFromPopBank(ReleveBancaireDto releveBancaireDto, Util util, InputStream fileInputStream) throws IOException, ParseException {
         int positionMax = util.getChaineMaxEspace().length() - util.getMaxEspaces() - 1 ;
         //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
-        File file = new File(pathFileUploaded) ;
-        FileInputStream fis = new FileInputStream(file) ;
-        PDDocument pdfDocument = PDDocument.load(fis);
-        Splitter splitter = new Splitter();
-        List<PDDocument> splitpages = splitter.split(pdfDocument);
-        // pdfTextStripper = pdfReader
-        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
-        pdfTextStripper.setSortByPosition(true);
-        pdfTextStripper.setAddMoreFormatting(true);
+        PDDocument pdfDocument = null;
+        try{
+
+            pdfDocument = PDDocument.load(fileInputStream); // Chargement du document directement à partir de l'InputStream
+            Splitter splitter = new Splitter();
+            List<PDDocument> splitPages = splitter.split(pdfDocument); // Division du document en pages
+            PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper();
+            pdfTextStripper.setSortByPosition(true);
+            pdfTextStripper.setAddMoreFormatting(true);
 
 
 
 
-        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
-        boolean ok = false ;int nombreLigneNonVide = 0 ;
+            ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+            boolean ok = false ;int nombreLigneNonVide = 0 ;
 
 
-        boolean ok_test_Releve_bancaire = false;
-        boolean ok_test_format_releve_bancaire = false;
-        boolean ok_test_head_array = false;
-        boolean ok_test_debut_operation_array = false;
-        String date_prelevement_extrait ="" ;
-        String premier_ligne_solde_crediteur_au_date = "";
-        String premier_ligne_credit_euro = "";
-        String dernier_ligne_solde_crediteur_au_date = "";
-        String dernier_ligne_credit_euro = "";
-        boolean ok_test_date_valeur_operation = false;
-        String date_valeur_operation = "";
-        String debit_ou_credit = "" ;
-        String liste_opertation="" ;
-        String dateOperation = "";
-        String date_valeur_Operation="";
-        boolean ok_test_fin_page;
-        boolean ok_total_mouvement = false;
-        String debit_total_mouvement="";
-        String credit_total_mouvement="";
-        String IBAN = "" ;
-        String dateOperation_precedente ="";
-        String date_valeur_Operation_precedente ="";
-        boolean ok_solde_crediteur = false ;
+            boolean ok_test_Releve_bancaire = false;
+            boolean ok_test_format_releve_bancaire = false;
+            boolean ok_test_head_array = false;
+            boolean ok_test_debut_operation_array = false;
+            String date_prelevement_extrait ="" ;
+            String premier_ligne_solde_crediteur_au_date = "";
+            String premier_ligne_credit_euro = "";
+            String dernier_ligne_solde_crediteur_au_date = "";
+            String dernier_ligne_credit_euro = "";
+            boolean ok_test_date_valeur_operation = false;
+            String date_valeur_operation = "";
+            String debit_ou_credit = "" ;
+            String liste_opertation="" ;
+            String dateOperation = "";
+            String date_valeur_Operation="";
+            boolean ok_test_fin_page;
+            boolean ok_total_mouvement = false;
+            String debit_total_mouvement="";
+            String credit_total_mouvement="";
+            String IBAN = "" ;
+            String dateOperation_precedente ="";
+            String date_valeur_Operation_precedente ="";
+            boolean ok_solde_crediteur = false ;
 
 
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
-        DonneeExtrait donneeExtrait = new DonneeExtrait() ;
-        ExtraitBancaire extraitBancaire = new ExtraitBancaire();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+            DonneeExtrait donneeExtrait = new DonneeExtrait() ;
+            ExtraitBancaire extraitBancaire = new ExtraitBancaire();
 
 
 
 //		ArrayList<Operation>operationsArrayList = new ArrayList<>();
-        List<ExtraitBancaire> extraits = new ArrayList<>();
-        List<DonneeExtrait> donneeExtraits=new ArrayList<>();
+            List<ExtraitBancaire> extraits = new ArrayList<>();
+            List<DonneeExtrait> donneeExtraits=new ArrayList<>();
 
-        String chaine_date_prelevement_extrait ="";
+            String chaine_date_prelevement_extrait ="";
 
 
-        for (PDDocument page : splitpages) {
+            for (PDDocument page : splitPages) {
 //			System.out.println("..................................................");
 //			System.out.println(page);
 //			System.out.println("..................................................");
-            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
-            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
-            ok_test_fin_page = false;
-            ok_test_head_array = false;
-            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
-                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
-                // split = diviser
-                //.split("\\s+") = split par espace ou plusieurs espaces
-                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
-                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
-                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
-                System.out.println(chaine); //break point ici
-                /***********************DEBUT DATA DE LA SOCIETE***************************/
-                //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
-                if (chaine.contains("RELEVE N°")){
-                    ok_test_Releve_bancaire = true ;
-                    System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
-                }
-                if (ok_test_Releve_bancaire){
-                    System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
-                    if (arrayOfWordsPerLigne.length-1>=0){
-                        chaine_date_prelevement_extrait=arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
-                        System.out.println(chaine);
+                String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+                String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+                ok_test_fin_page = false;
+                ok_test_head_array = false;
+                for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+                    System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+                    // split = diviser
+                    //.split("\\s+") = split par espace ou plusieurs espaces
+                    String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
+                    System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+                    String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+                    System.out.println(chaine); //break point ici
+                    /***********************DEBUT DATA DE LA SOCIETE***************************/
+                    //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
+                    if (chaine.contains("RELEVE N°")){
+                        ok_test_Releve_bancaire = true ;
+                        System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
+                    }
+                    if (ok_test_Releve_bancaire){
+                        System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+                        if (arrayOfWordsPerLigne.length-1>=0){
+                            chaine_date_prelevement_extrait=arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
+                            System.out.println(chaine);
+                        }
+
+                        if (isValidDateCrediteur(chaine_date_prelevement_extrait) && (date_prelevement_extrait.equals(""))){
+                            ok_test_format_releve_bancaire = true ;
+                            date_prelevement_extrait = chaine_date_prelevement_extrait;
+                            System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
+                            System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+                        }
+                    }
+                    if (chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")){
+                        ok_test_head_array = true ;
+                        System.out.println("ok_test_head_array="+ok_test_head_array);
+                    }
+                    if (chaine.contains("SOLDE CREDITEUR AU")){
+                        System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
+                        System.out.println("chaine ="+chaine);
+                    }
+                    ///hethi fi awel tableau
+                    if (ok_total_mouvement==false){
+                        String str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
+                        if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
+                            ok_test_debut_operation_array = true ;
+                            premier_ligne_solde_crediteur_au_date =  arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
+                            premier_ligne_credit_euro = str_solde_crediteur_concatiner;
+                            System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+                            System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
+                            System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
+                            //ok_total_mouvement=!ok_total_mouvement;
+                        }
+                    }
+                    ///hethi fi e5er tableau
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ppppppppppppp
+                    String str_solde_crediteur_concatiner = "" ;
+                    String str_date_crediteur_concatiner ="" ;
+                    if (ok_total_mouvement==true){     ///TODO  hneeee
+                        if (arrayOfWordsPerLigne.length>=6){
+                            str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
+                            str_date_crediteur_concatiner = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
+                        }
+                        if (str_date_crediteur_concatiner.indexOf("*")!=-1){
+                            str_date_crediteur_concatiner=str_date_crediteur_concatiner.replace("*","");
+                        }
+                        System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
+                        System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
+
+                        if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(str_date_crediteur_concatiner) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
+                            //hethouma tawa
+                            ok_solde_crediteur = true ;
+                            ok_test_fin_page=true ;
+                            liste_opertation = "" ;
+                            //end of
+                            ok_test_debut_operation_array = false ;
+                            dernier_ligne_solde_crediteur_au_date = str_date_crediteur_concatiner;
+                            dernier_ligne_credit_euro = str_solde_crediteur_concatiner ;
+                            System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+                            System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
+                            System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
+                            ok_total_mouvement=false ;
+                        }
                     }
 
-                    if (isValidDateCrediteur(chaine_date_prelevement_extrait) && (date_prelevement_extrait.equals(""))){
-                        ok_test_format_releve_bancaire = true ;
-                        date_prelevement_extrait = chaine_date_prelevement_extrait;
-                        System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
-                        System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+                    if (arrayOfWordsPerLigne.length>=5){
+                        int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+                        if (index_date_operation!=-1){
+                            dateOperation = arrayOfWordsPerLigne[index_date_operation]+'/'+date_prelevement_extrait.substring(6,10);
+                            date_valeur_Operation = arrayOfWordsPerLigne[index_date_operation+1] + '/'+date_prelevement_extrait.substring(6,10);
+                        }else{
+                            dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+date_prelevement_extrait.substring(6,10);
+                            date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] + '/'+date_prelevement_extrait.substring(6,10);
+                        }
+                        System.out.println("\ndateOperation="+dateOperation);
+                        System.out.println("\ndate_valeur_Operation="+date_valeur_Operation);
+                        System.out.println("");
+                    }else {
+                        dateOperation = "" ;
+                        date_valeur_Operation = "" ;
                     }
-                }
-                if (chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")){
-                    ok_test_head_array = true ;
-                    System.out.println("ok_test_head_array="+ok_test_head_array);
-                }
-                if (chaine.contains("SOLDE CREDITEUR AU")){
-                    System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
-                    System.out.println("chaine ="+chaine);
-                }
-                ///hethi fi awel tableau
-                if (ok_total_mouvement==false){
-                    String str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
-                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
-                        ok_test_debut_operation_array = true ;
-                        premier_ligne_solde_crediteur_au_date =  arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
-                        premier_ligne_credit_euro = str_solde_crediteur_concatiner;
-                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
-                        System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
-                        System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
-                        //ok_total_mouvement=!ok_total_mouvement;
-                    }
-                }
-                ///hethi fi e5er tableau
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ppppppppppppp
-                String str_solde_crediteur_concatiner = "" ;
-                String str_date_crediteur_concatiner ="" ;
-                if (ok_total_mouvement==true){     ///TODO  hneeee
-                     if (arrayOfWordsPerLigne.length>=6){
-                         str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
-                         str_date_crediteur_concatiner = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
-                     }
-                    if (str_date_crediteur_concatiner.indexOf("*")!=-1){
-                        str_date_crediteur_concatiner=str_date_crediteur_concatiner.replace("*","");
-                    }
-                    System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
-                    System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
+                    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    if (chaine.contains("IBAN") && IBAN.equals("")){
+                        int begin_index = chaine.indexOf(" ") ;
+                        int end_index = chaine.indexOf("BIC") ;
 
-                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(str_date_crediteur_concatiner) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
+                        IBAN = chaine.substring(begin_index+1,end_index-1);
                         //hethouma tawa
-                        ok_solde_crediteur = true ;
-                        ok_test_fin_page=true ;
-                        liste_opertation = "" ;
+                        //IBAN = chaine;
+                        //IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
+
+                        System.out.println("IBAN.........="+IBAN+"=");
+                        // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
                         //end of
-                        ok_test_debut_operation_array = false ;
-                        dernier_ligne_solde_crediteur_au_date = str_date_crediteur_concatiner;
-                        dernier_ligne_credit_euro = str_solde_crediteur_concatiner ;
-                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
-                        System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
-                        System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
-                        ok_total_mouvement=false ;
-                    }
-                }
-
-                if (arrayOfWordsPerLigne.length>=5){
-                    int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
-                    if (index_date_operation!=-1){
-                        dateOperation = arrayOfWordsPerLigne[index_date_operation]+'/'+date_prelevement_extrait.substring(6,10);
-                        date_valeur_Operation = arrayOfWordsPerLigne[index_date_operation+1] + '/'+date_prelevement_extrait.substring(6,10);
-                    }else{
-                        dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+date_prelevement_extrait.substring(6,10);
-                        date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] + '/'+date_prelevement_extrait.substring(6,10);
-                    }
-                    System.out.println("\ndateOperation="+dateOperation);
-                    System.out.println("\ndate_valeur_Operation="+date_valeur_Operation);
-                    System.out.println("");
-                }else {
-                    dateOperation = "" ;
-                    date_valeur_Operation = "" ;
-                }
-                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                if (chaine.contains("IBAN") && IBAN.equals("")){
-                    int begin_index = chaine.indexOf(" ") ;
-                    int end_index = chaine.indexOf("BIC") ;
-
-                    IBAN = chaine.substring(begin_index+1,end_index-1);
-                    //hethouma tawa
-                    //IBAN = chaine;
-                    //IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
-
-                    System.out.println("IBAN.........="+IBAN+"=");
-                    // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
-                    //end of
 //                    ok_test_fin_page=true ;
 //                    liste_opertation = "" ;
-                }
-                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
-                    if (liste_opertation.equals("") == false){
-                        System.out.println("\n............................................................\n");
-                        System.out.println("dateOperation_precedente="+dateOperation_precedente);
-                        System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
-                        System.out.println("liste_opertation="+liste_opertation);
-                        System.out.println("\n............................................................\n");
+                    }
+                    if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
+                        if (liste_opertation.equals("") == false){
+                            System.out.println("\n............................................................\n");
+                            System.out.println("dateOperation_precedente="+dateOperation_precedente);
+                            System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+                            System.out.println("liste_opertation="+liste_opertation);
+                            System.out.println("\n............................................................\n");
+
+                            donneeExtrait.setOperations(liste_opertation);
+                            //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
+                            System.out.println(donneeExtraits);
+                            //ahne lezemna nda5ouha lel base
+                            donneeExtraits.add(donneeExtrait);
+
+                            System.out.println(donneeExtraits);
+                            //!!!!
+
+
+                            donneeExtrait=new DonneeExtrait();
+                            //operationsArrayList=new ArrayList<Operation>();
+                            liste_opertation = "" ;
+                            System.out.println("liste_opertation="+liste_opertation);
+                        }
+                        ok_test_date_valeur_operation=true ;
+                        //date_valeur_operation = dateOperation ;//02/11/2020
+                        dateOperation_precedente = dateOperation ;
+                        date_valeur_Operation_precedente = date_valeur_Operation;
+
+
+
+                        int position_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+                        System.out.println(position_date_operation);
+
+                        if (position_date_operation !=-1){
+                            debit_ou_credit=getOperationPerLigneSansEspace(arrayOfWordsPerLigne,position_date_operation+2,arrayOfWordsPerLigne.length-1) ;
+                        }
+
+
+
+
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+
+
+
+                        int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+                        System.out.println("index_date_operation="+index_date_operation);
+                        if (index_date_operation!=-1){
+                            liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,2,index_date_operation-1)+"***";
+                        }
+
+
+                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
+
+
+
+                        System.out.println("liste_opertation="+liste_opertation);//break point
+
+
+
+
+
+
+                        System.out.println("\narrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+                        System.out.println("\nchaine"+convertArrayToString(arrayOfWordsPerLigne)) ;//BREAK POINT
+                        // cette  fonction removeSpacesBetweenDigits permet de supprimer les espaces entre deux chiffres SI IL Y A entre [1..3] ESPACES c'est le cas de valeur debit et credit (entre 1 et 3 pour le cas de l'objet 10 : debit euro = 25 200,00) et dans la date 15/11
+                        String output = removeSpacesBetweenDigits(arrayOfLignesContentPage[i]);
+                        int position = output.indexOf(debit_ou_credit);
+                        //int position = indexOfSubstring3(output,debit_ou_credit) ;
+
+                        System.out.println("debit_ou_credit="+debit_ou_credit);
+                        System.out.println("output="+output);
+                        System.out.println("position="+position);
+                        System.out.println("---------------------------************************************************");
+                        donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+                        donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
+                        if (position!=-1){
+                            if (position<positionMax){
+                                donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+                                donneeExtrait.setCredit(0.0);
+                            }
+                            if (position>positionMax){
+                                donneeExtrait.setDebit(0.0);
+                                donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+                            }
+                        };
+
+                    }
+                    if (chaine.contains("A la Banque Populaire Rives de Paris, l'assurance des personnes et des biens c'est aussi notre métier.") ){
+                        ok_test_fin_page=true;
+                        System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
+                    }
+                    if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
+                        if ((chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("TOTAL DES MOUVEMENTS")==false) && (chaine.contains("IBAN")==false)){
+                            liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
+                            //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
+                            System.out.println("liste_opertation="+liste_opertation);//break point
+                        }
+                    }
+                    //lezemni ntayah win toufa l page
+
+                    if (chaine.contains("TOTAL DES MOUVEMENTS")){
+                        ok_total_mouvement=true;
+
+                        debit_total_mouvement = "0";
+                        credit_total_mouvement= "0";
+                        if (arrayOfWordsPerLigne.length==6){
+                            debit_total_mouvement=arrayOfWordsPerLigne[4]; // TODO yebda l montant diviser sur 2
+                            credit_total_mouvement=arrayOfWordsPerLigne[5];
+                        }
+                        if (arrayOfWordsPerLigne.length==8){
+                            debit_total_mouvement=arrayOfWordsPerLigne[4]+arrayOfWordsPerLigne[5]; // TODO yebda l montant diviser sur 2
+                            credit_total_mouvement=arrayOfWordsPerLigne[6]+arrayOfWordsPerLigne[7];
+                        }
+
+
+                        System.out.println("credit_total_mouvement="+credit_total_mouvement);
+                        System.out.println("debit_total_mouvement="+debit_total_mouvement);
+                        System.out.println("debit_total_mouvement="+debit_total_mouvement);
+
 
                         donneeExtrait.setOperations(liste_opertation);
-                        //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
-                        System.out.println(donneeExtraits);
-                        //ahne lezemna nda5ouha lel base
+                        System.out.println(donneeExtrait);
                         donneeExtraits.add(donneeExtrait);
 
-                        System.out.println(donneeExtraits);
-                        //!!!!
 
 
-                        donneeExtrait=new DonneeExtrait();
-                        //operationsArrayList=new ArrayList<Operation>();
-                        liste_opertation = "" ;
-                        System.out.println("liste_opertation="+liste_opertation);
                     }
-                    ok_test_date_valeur_operation=true ;
-                    //date_valeur_operation = dateOperation ;//02/11/2020
-                    dateOperation_precedente = dateOperation ;
-                    date_valeur_Operation_precedente = date_valeur_Operation;
+                    //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+                    if (ok_solde_crediteur){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+                        //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+                        System.out.println("------------------------------------------------------------");
+                        System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
+                        System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
+                        System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
+
+                        System.out.println("debit_total_mouvement="+debit_total_mouvement);
+                        System.out.println("credit_total_mouvement="+credit_total_mouvement);
 
 
 
-                    int position_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
-                    System.out.println(position_date_operation);
+                        System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
+                        System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
 
-                    if (position_date_operation !=-1){
-                        debit_ou_credit=getOperationPerLigneSansEspace(arrayOfWordsPerLigne,position_date_operation+2,arrayOfWordsPerLigne.length-1) ;
+                        System.out.println("IBAN =--------------------------"+IBAN);
+
+                        // insert the date object into the database here
+
+
+                        extraitBancaire.setDateExtrait(dateFormat.parse(date_prelevement_extrait));
+
+                        extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
+                        extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
+
+                        extraitBancaire.setDonneeExtraits(donneeExtraits);
+                        System.out.println("debit_total_mouvement = "+debit_total_mouvement);
+                        System.out.println("credit_total_mouvement = "+credit_total_mouvement);
+
+                        extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
+                        extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
+
+
+
+
+
+
+
+
+                        extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
+
+                        extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
+                        System.out.println("extrait_BancaireDto");
+                        System.out.println(extraitBancaire);
+                        //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
+                        extraits.add(extraitBancaire);
+                        System.out.println(extraits);//break point
+
+                        extraitBancaire = new ExtraitBancaire() ;
+                        donneeExtraits=new ArrayList<>();
+                        ok_solde_crediteur=false ;
                     }
-
-
-
-
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-
-
-
-                    int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
-                    System.out.println("index_date_operation="+index_date_operation);
-                    if (index_date_operation!=-1){
-                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,2,index_date_operation-1)+"***";
-                    }
-
-
-                    //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
-
-
-
-                    System.out.println("liste_opertation="+liste_opertation);//break point
-
-
-
-
-
-
-                    System.out.println("\narrayOfWordsPerLigne="+arrayOfWordsPerLigne);
-                    System.out.println("\nchaine"+convertArrayToString(arrayOfWordsPerLigne)) ;//BREAK POINT
-                    // cette  fonction removeSpacesBetweenDigits permet de supprimer les espaces entre deux chiffres SI IL Y A entre [1..3] ESPACES c'est le cas de valeur debit et credit (entre 1 et 3 pour le cas de l'objet 10 : debit euro = 25 200,00) et dans la date 15/11
-                    String output = removeSpacesBetweenDigits(arrayOfLignesContentPage[i]);
-                    int position = output.indexOf(debit_ou_credit);
-                    //int position = indexOfSubstring3(output,debit_ou_credit) ;
-
-                    System.out.println("debit_ou_credit="+debit_ou_credit);
-                    System.out.println("output="+output);
-                    System.out.println("position="+position);
-                    System.out.println("---------------------------************************************************");
-                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
-                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
-                    if (position!=-1){
-                        if (position<positionMax){
-                            donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
-                            donneeExtrait.setCredit(0.0);
-                        }
-                        if (position>positionMax){
-                            donneeExtrait.setDebit(0.0);
-                            donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
-                        }
-                    };
-
-                }
-                if (chaine.contains("A la Banque Populaire Rives de Paris, l'assurance des personnes et des biens c'est aussi notre métier.") ){
-                    ok_test_fin_page=true;
-                    System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
-                }
-                if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
-                    if ((chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("TOTAL DES MOUVEMENTS")==false) && (chaine.contains("IBAN")==false)){
-                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
-                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
-                        System.out.println("liste_opertation="+liste_opertation);//break point
-                    }
-                }
-                //lezemni ntayah win toufa l page
-
-                if (chaine.contains("TOTAL DES MOUVEMENTS")){
-                    ok_total_mouvement=true;
-
-                    debit_total_mouvement = "0";
-                    credit_total_mouvement= "0";
-                    if (arrayOfWordsPerLigne.length==6){
-                        debit_total_mouvement=arrayOfWordsPerLigne[4]; // TODO yebda l montant diviser sur 2
-                        credit_total_mouvement=arrayOfWordsPerLigne[5];
-                    }
-                    if (arrayOfWordsPerLigne.length==8){
-                        debit_total_mouvement=arrayOfWordsPerLigne[4]+arrayOfWordsPerLigne[5]; // TODO yebda l montant diviser sur 2
-                        credit_total_mouvement=arrayOfWordsPerLigne[6]+arrayOfWordsPerLigne[7];
-                    }
-
-
-                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
-                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
-                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
-
-
-                    donneeExtrait.setOperations(liste_opertation);
-                    System.out.println(donneeExtrait);
-                    donneeExtraits.add(donneeExtrait);
-
-
-
-                }
-                //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
-                if (ok_solde_crediteur){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
-                    //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
-                    System.out.println("------------------------------------------------------------");
-                    System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
-                    System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
-                    System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
-
-                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
-                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
-
-
-
-                    System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
-                    System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
-
-                    System.out.println("IBAN =--------------------------"+IBAN);
-
-                    // insert the date object into the database here
-
-
-                    extraitBancaire.setDateExtrait(dateFormat.parse(date_prelevement_extrait));
-
-                    extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
-                    extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
-
-                    extraitBancaire.setDonneeExtraits(donneeExtraits);
-                    System.out.println("debit_total_mouvement = "+debit_total_mouvement);
-                    System.out.println("credit_total_mouvement = "+credit_total_mouvement);
-
-                    extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
-                    extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
-
-
-
-
-
-
-
-
-                    extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
-
-                    extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
-                    System.out.println("extrait_BancaireDto");
-                    System.out.println(extraitBancaire);
-                    //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
-                    extraits.add(extraitBancaire);
-                    System.out.println(extraits);//break point
-
-                    extraitBancaire = new ExtraitBancaire() ;
-                    donneeExtraits=new ArrayList<>();
-                    ok_solde_crediteur=false ;
                 }
             }
+            releveBancaireDto.setIban(IBAN);
+            releveBancaireDto.setExtraits(extraits);
+            pdfDocument.close();
+            //fis.close();
+        }finally {
+            if (pdfDocument != null) {
+                pdfDocument.close(); // Fermeture du document pour libérer les ressources
+            }
         }
-        releveBancaireDto.setIban(IBAN);
-        releveBancaireDto.setExtraits(extraits);
-        pdfDocument.close();
-        fis.close();
+
+
+
 
     }
+
+    //    recement utilisee
+//    public void  extractListeOperationFromPopBank(ReleveBancaireDto releveBancaireDto, Util util, String pathFileUploaded) throws IOException, ParseException {
+//        int positionMax = util.getChaineMaxEspace().length() - util.getMaxEspaces() - 1 ;
+//        //String path = "C:\\Users\\mehdi\\Desktop\\mehdi_test_extract_pfe\\TestExtraction\\Ext1.pdf";
+//        File file = new File(pathFileUploaded) ;
+//        FileInputStream fis = new FileInputStream(file) ;
+//        PDDocument pdfDocument = PDDocument.load(fis);
+//        Splitter splitter = new Splitter();
+//        List<PDDocument> splitpages = splitter.split(pdfDocument);
+//        // pdfTextStripper = pdfReader
+//        PDFTextStripper pdfTextStripper = new PDFLayoutTextStripper() ;
+//        pdfTextStripper.setSortByPosition(true);
+//        pdfTextStripper.setAddMoreFormatting(true);
+//
+//
+//
+//
+//        ///ok c'est l 'indicateur pour extraire nom societe / adresse / nom du PDG
+//        boolean ok = false ;int nombreLigneNonVide = 0 ;
+//
+//
+//        boolean ok_test_Releve_bancaire = false;
+//        boolean ok_test_format_releve_bancaire = false;
+//        boolean ok_test_head_array = false;
+//        boolean ok_test_debut_operation_array = false;
+//        String date_prelevement_extrait ="" ;
+//        String premier_ligne_solde_crediteur_au_date = "";
+//        String premier_ligne_credit_euro = "";
+//        String dernier_ligne_solde_crediteur_au_date = "";
+//        String dernier_ligne_credit_euro = "";
+//        boolean ok_test_date_valeur_operation = false;
+//        String date_valeur_operation = "";
+//        String debit_ou_credit = "" ;
+//        String liste_opertation="" ;
+//        String dateOperation = "";
+//        String date_valeur_Operation="";
+//        boolean ok_test_fin_page;
+//        boolean ok_total_mouvement = false;
+//        String debit_total_mouvement="";
+//        String credit_total_mouvement="";
+//        String IBAN = "" ;
+//        String dateOperation_precedente ="";
+//        String date_valeur_Operation_precedente ="";
+//        boolean ok_solde_crediteur = false ;
+//
+//
+//
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
+//        DonneeExtrait donneeExtrait = new DonneeExtrait() ;
+//        ExtraitBancaire extraitBancaire = new ExtraitBancaire();
+//
+//
+//
+////		ArrayList<Operation>operationsArrayList = new ArrayList<>();
+//        List<ExtraitBancaire> extraits = new ArrayList<>();
+//        List<DonneeExtrait> donneeExtraits=new ArrayList<>();
+//
+//        String chaine_date_prelevement_extrait ="";
+//
+//
+//        for (PDDocument page : splitpages) {
+////			System.out.println("..................................................");
+////			System.out.println(page);
+////			System.out.println("..................................................");
+//            String contentPage = pdfTextStripper.getText(page); //Le contenu de la page i (1,2,3,4,5...)
+//            String[] arrayOfLignesContentPage = contentPage.split("\n"); // decouppage de content page ligne par ligne  par le delimiteur l /n
+//            ok_test_fin_page = false;
+//            ok_test_head_array = false;
+//            for (int i = 0; i < arrayOfLignesContentPage.length; i++) {
+//                System.out.println(arrayOfLignesContentPage[i]) ;//BREAK POINT
+//                // split = diviser
+//                //.split("\\s+") = split par espace ou plusieurs espaces
+//                String[] arrayOfWordsPerLigne = arrayOfLignesContentPage[i].split("\\s+");
+//                System.out.println(arrayOfWordsPerLigne) ;//BREAK POINT
+//                String chaine = convertArrayToString(arrayOfWordsPerLigne) ;
+//                System.out.println(chaine); //break point ici
+//                /***********************DEBUT DATA DE LA SOCIETE***************************/
+//                //if (chaine.contains("RELEVE ET INFORMATIONS BANCAIRES")){
+//                if (chaine.contains("RELEVE N°")){
+//                    ok_test_Releve_bancaire = true ;
+//                    System.out.println("ok_test_Releve_bancaire="+ok_test_Releve_bancaire);
+//                }
+//                if (ok_test_Releve_bancaire){
+//                    System.out.println("arrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+//                    if (arrayOfWordsPerLigne.length-1>=0){
+//                        chaine_date_prelevement_extrait=arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-1];
+//                        System.out.println(chaine);
+//                    }
+//
+//                    if (isValidDateCrediteur(chaine_date_prelevement_extrait) && (date_prelevement_extrait.equals(""))){
+//                        ok_test_format_releve_bancaire = true ;
+//                        date_prelevement_extrait = chaine_date_prelevement_extrait;
+//                        System.out.println("ok_test_format_releve_bancaire="+ok_test_format_releve_bancaire);
+//                        System.out.println("date_prelevement_extrait="+date_prelevement_extrait);
+//                    }
+//                }
+//                if (chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")){
+//                    ok_test_head_array = true ;
+//                    System.out.println("ok_test_head_array="+ok_test_head_array);
+//                }
+//                if (chaine.contains("SOLDE CREDITEUR AU")){
+//                    System.out.println("arrayOfWordsPerLigne ="+arrayOfWordsPerLigne) ;
+//                    System.out.println("chaine ="+chaine);
+//                }
+//                ///hethi fi awel tableau
+//                if (ok_total_mouvement==false){
+//                    String str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
+//                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
+//                        ok_test_debut_operation_array = true ;
+//                        premier_ligne_solde_crediteur_au_date =  arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
+//                        premier_ligne_credit_euro = str_solde_crediteur_concatiner;
+//                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+//                        System.out.println("premier_ligne_solde_crediteur_au_date="+premier_ligne_solde_crediteur_au_date);
+//                        System.out.println("premier_ligne_credit_euro="+premier_ligne_credit_euro);
+//                        //ok_total_mouvement=!ok_total_mouvement;
+//                    }
+//                }
+//                ///hethi fi e5er tableau
+//                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!ppppppppppppp
+//                String str_solde_crediteur_concatiner = "" ;
+//                String str_date_crediteur_concatiner ="" ;
+//                if (ok_total_mouvement==true){     ///TODO  hneeee
+//                     if (arrayOfWordsPerLigne.length>=6){
+//                         str_solde_crediteur_concatiner = getOperationPerLigneSansEspace(arrayOfWordsPerLigne,arrayOfWordsPerLigne.length-2,arrayOfWordsPerLigne.length-1) ;
+//                         str_date_crediteur_concatiner = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3] ;
+//                     }
+//                    if (str_date_crediteur_concatiner.indexOf("*")!=-1){
+//                        str_date_crediteur_concatiner=str_date_crediteur_concatiner.replace("*","");
+//                    }
+//                    System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
+//                    System.out.println("str_date_crediteur_concatiner="+str_date_crediteur_concatiner);
+//
+//                    if (chaine.contains("SOLDE CREDITEUR AU") && isValidDateCrediteur(str_date_crediteur_concatiner) &&  isValidSoldeCrediteur(str_solde_crediteur_concatiner)){
+//                        //hethouma tawa
+//                        ok_solde_crediteur = true ;
+//                        ok_test_fin_page=true ;
+//                        liste_opertation = "" ;
+//                        //end of
+//                        ok_test_debut_operation_array = false ;
+//                        dernier_ligne_solde_crediteur_au_date = str_date_crediteur_concatiner;
+//                        dernier_ligne_credit_euro = str_solde_crediteur_concatiner ;
+//                        System.out.println("ok_test_debut_operation_array="+ok_test_debut_operation_array);
+//                        System.out.println("dernier_ligne_solde_crediteur_au_date="+dernier_ligne_solde_crediteur_au_date);
+//                        System.out.println("dernier_ligne_credit_euro="+dernier_ligne_credit_euro);
+//                        ok_total_mouvement=false ;
+//                    }
+//                }
+//
+//                if (arrayOfWordsPerLigne.length>=5){
+//                    int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+//                    if (index_date_operation!=-1){
+//                        dateOperation = arrayOfWordsPerLigne[index_date_operation]+'/'+date_prelevement_extrait.substring(6,10);
+//                        date_valeur_Operation = arrayOfWordsPerLigne[index_date_operation+1] + '/'+date_prelevement_extrait.substring(6,10);
+//                    }else{
+//                        dateOperation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-3]+'/'+date_prelevement_extrait.substring(6,10);
+//                        date_valeur_Operation = arrayOfWordsPerLigne[arrayOfWordsPerLigne.length-2] + '/'+date_prelevement_extrait.substring(6,10);
+//                    }
+//                    System.out.println("\ndateOperation="+dateOperation);
+//                    System.out.println("\ndate_valeur_Operation="+date_valeur_Operation);
+//                    System.out.println("");
+//                }else {
+//                    dateOperation = "" ;
+//                    date_valeur_Operation = "" ;
+//                }
+//                //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//                if (chaine.contains("IBAN") && IBAN.equals("")){
+//                    int begin_index = chaine.indexOf(" ") ;
+//                    int end_index = chaine.indexOf("BIC") ;
+//
+//                    IBAN = chaine.substring(begin_index+1,end_index-1);
+//                    //hethouma tawa
+//                    //IBAN = chaine;
+//                    //IBAN = isValidIBAN(getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1)) ;
+//
+//                    System.out.println("IBAN.........="+IBAN+"=");
+//                    // TODO IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+//                    //end of
+////                    ok_test_fin_page=true ;
+////                    liste_opertation = "" ;
+//                }
+//                if (isValidDateCrediteur(dateOperation) && isValidDateCrediteur(date_valeur_Operation)  && ok_test_fin_page==false && ok_test_head_array==true){
+//                    if (liste_opertation.equals("") == false){
+//                        System.out.println("\n............................................................\n");
+//                        System.out.println("dateOperation_precedente="+dateOperation_precedente);
+//                        System.out.println("date_valeur_Operation_precedente="+date_valeur_Operation_precedente);
+//                        System.out.println("liste_opertation="+liste_opertation);
+//                        System.out.println("\n............................................................\n");
+//
+//                        donneeExtrait.setOperations(liste_opertation);
+//                        //donneeExtraitDto = this.donneeExtraitService.createDonneeExtrait(donneeExtraitDto); //TODO haw haw
+//                        System.out.println(donneeExtraits);
+//                        //ahne lezemna nda5ouha lel base
+//                        donneeExtraits.add(donneeExtrait);
+//
+//                        System.out.println(donneeExtraits);
+//                        //!!!!
+//
+//
+//                        donneeExtrait=new DonneeExtrait();
+//                        //operationsArrayList=new ArrayList<Operation>();
+//                        liste_opertation = "" ;
+//                        System.out.println("liste_opertation="+liste_opertation);
+//                    }
+//                    ok_test_date_valeur_operation=true ;
+//                    //date_valeur_operation = dateOperation ;//02/11/2020
+//                    dateOperation_precedente = dateOperation ;
+//                    date_valeur_Operation_precedente = date_valeur_Operation;
+//
+//
+//
+//                    int position_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+//                    System.out.println(position_date_operation);
+//
+//                    if (position_date_operation !=-1){
+//                        debit_ou_credit=getOperationPerLigneSansEspace(arrayOfWordsPerLigne,position_date_operation+2,arrayOfWordsPerLigne.length-1) ;
+//                    }
+//
+//
+//
+//
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//
+//
+//
+//                    int index_date_operation = getPositionOfDateOperation(arrayOfWordsPerLigne,date_prelevement_extrait);
+//                    System.out.println("index_date_operation="+index_date_operation);
+//                    if (index_date_operation!=-1){
+//                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,2,index_date_operation-1)+"***";
+//                    }
+//
+//
+//                    //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfW0ordsPerLigne,3,arrayOfWordsPerLigne.length-2))) ;
+//
+//
+//
+//                    System.out.println("liste_opertation="+liste_opertation);//break point
+//
+//
+//
+//
+//
+//
+//                    System.out.println("\narrayOfWordsPerLigne="+arrayOfWordsPerLigne);
+//                    System.out.println("\nchaine"+convertArrayToString(arrayOfWordsPerLigne)) ;//BREAK POINT
+//                    // cette  fonction removeSpacesBetweenDigits permet de supprimer les espaces entre deux chiffres SI IL Y A entre [1..3] ESPACES c'est le cas de valeur debit et credit (entre 1 et 3 pour le cas de l'objet 10 : debit euro = 25 200,00) et dans la date 15/11
+//                    String output = removeSpacesBetweenDigits(arrayOfLignesContentPage[i]);
+//                    int position = output.indexOf(debit_ou_credit);
+//                    //int position = indexOfSubstring3(output,debit_ou_credit) ;
+//
+//                    System.out.println("debit_ou_credit="+debit_ou_credit);
+//                    System.out.println("output="+output);
+//                    System.out.println("position="+position);
+//                    System.out.println("---------------------------************************************************");
+//                    donneeExtrait.setDateDonneeExtrait(dateFormat.parse(dateOperation_precedente));
+//                    donneeExtrait.setDateValeurDonneeExtrait(dateFormat.parse(date_valeur_Operation_precedente));
+//                    if (position!=-1){
+//                        if (position<positionMax){
+//                            donneeExtrait.setDebit(convertToDouble(debit_ou_credit));
+//                            donneeExtrait.setCredit(0.0);
+//                        }
+//                        if (position>positionMax){
+//                            donneeExtrait.setDebit(0.0);
+//                            donneeExtrait.setCredit(convertToDouble(debit_ou_credit));
+//                        }
+//                    };
+//
+//                }
+//                if (chaine.contains("A la Banque Populaire Rives de Paris, l'assurance des personnes et des biens c'est aussi notre métier.") ){
+//                    ok_test_fin_page=true;
+//                    System.out.println("ok_test_fin_page="+ok_test_fin_page);//break point
+//                }
+//                if (ok_test_date_valeur_operation && isValidDateCrediteur(dateOperation) == false && isValidDateCrediteur(date_valeur_Operation) == false && chaine.length()!=0 && ok_test_fin_page==false && ok_test_head_array==true){
+//                    if ((chaine.contains("COMPTA LIBELLE/REFERENCE OPERATION VALEUR EUROS")==false) && (chaine.contains("SOLDE CREDITEUR AU")==false)&& (chaine.contains("TOTAL DES MOUVEMENTS")==false) && (chaine.contains("IBAN")==false)){
+//                        liste_opertation = liste_opertation+getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)+"***";
+//                        //operationsArrayList.add(new Operation(getOperationPerLigne(arrayOfWordsPerLigne,1,arrayOfWordsPerLigne.length-1)));
+//                        System.out.println("liste_opertation="+liste_opertation);//break point
+//                    }
+//                }
+//                //lezemni ntayah win toufa l page
+//
+//                if (chaine.contains("TOTAL DES MOUVEMENTS")){
+//                    ok_total_mouvement=true;
+//
+//                    debit_total_mouvement = "0";
+//                    credit_total_mouvement= "0";
+//                    if (arrayOfWordsPerLigne.length==6){
+//                        debit_total_mouvement=arrayOfWordsPerLigne[4]; // TODO yebda l montant diviser sur 2
+//                        credit_total_mouvement=arrayOfWordsPerLigne[5];
+//                    }
+//                    if (arrayOfWordsPerLigne.length==8){
+//                        debit_total_mouvement=arrayOfWordsPerLigne[4]+arrayOfWordsPerLigne[5]; // TODO yebda l montant diviser sur 2
+//                        credit_total_mouvement=arrayOfWordsPerLigne[6]+arrayOfWordsPerLigne[7];
+//                    }
+//
+//
+//                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
+//                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
+//                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
+//
+//
+//                    donneeExtrait.setOperations(liste_opertation);
+//                    System.out.println(donneeExtrait);
+//                    donneeExtraits.add(donneeExtrait);
+//
+//
+//
+//                }
+//                //if (chaine.contains("IBAN")){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+//                if (ok_solde_crediteur){ /// TODO pour indiquer que le dateExtrait est terminee et je vais l'ajouter a ma DB
+//                    //IBAN = getOperationPerLigne(arrayOfWordsPerLigne,3,arrayOfWordsPerLigne.length-1) ;
+//                    System.out.println("------------------------------------------------------------");
+//                    System.out.println("date_prelevement_extrait ="+date_prelevement_extrait);
+//                    System.out.println("premier_ligne_solde_crediteur_au_date ="+premier_ligne_solde_crediteur_au_date);
+//                    System.out.println("premier_ligne_credit_euro ="+premier_ligne_credit_euro);
+//
+//                    System.out.println("debit_total_mouvement="+debit_total_mouvement);
+//                    System.out.println("credit_total_mouvement="+credit_total_mouvement);
+//
+//
+//
+//                    System.out.println("dernier_ligne_solde_crediteur_au_date ="+dernier_ligne_solde_crediteur_au_date);
+//                    System.out.println("dernier_ligne_credit_euro ="+dernier_ligne_credit_euro);
+//
+//                    System.out.println("IBAN =--------------------------"+IBAN);
+//
+//                    // insert the date object into the database here
+//
+//
+//                    extraitBancaire.setDateExtrait(dateFormat.parse(date_prelevement_extrait));
+//
+//                    extraitBancaire.setDateDuSoldeCrediteurDebutMois(dateFormat.parse(premier_ligne_solde_crediteur_au_date));
+//                    extraitBancaire.setCreditDuSoldeCrediteurDebutMois(convertToDouble(premier_ligne_credit_euro));
+//
+//                    extraitBancaire.setDonneeExtraits(donneeExtraits);
+//                    System.out.println("debit_total_mouvement = "+debit_total_mouvement);
+//                    System.out.println("credit_total_mouvement = "+credit_total_mouvement);
+//
+//                    extraitBancaire.setTotalMouvementsDebit(convertToDouble(debit_total_mouvement));
+//                    extraitBancaire.setTotalMouvementsCredit(convertToDouble(credit_total_mouvement));
+//
+//
+//
+//
+//
+//
+//
+//
+//                    extraitBancaire.setDateDuSoldeCrediteurFinMois(dateFormat.parse(dernier_ligne_solde_crediteur_au_date));
+//
+//                    extraitBancaire.setCreditDuSoldeCrediteurFinMois(convertToDouble(dernier_ligne_credit_euro));
+//                    System.out.println("extrait_BancaireDto");
+//                    System.out.println(extraitBancaire);
+//                    //extraitBancaireDto = this.extraitBancaireService.createExtraitBancaire(extraitBancaireDto) ; //TODO haw haw
+//                    extraits.add(extraitBancaire);
+//                    System.out.println(extraits);//break point
+//
+//                    extraitBancaire = new ExtraitBancaire() ;
+//                    donneeExtraits=new ArrayList<>();
+//                    ok_solde_crediteur=false ;
+//                }
+//            }
+//        }
+//        releveBancaireDto.setIban(IBAN);
+//        releveBancaireDto.setExtraits(extraits);
+//        pdfDocument.close();
+//        fis.close();
+//
+//    }
     int getPositionOfDateOperation(String[] arrayOfWordsPerLigne,String date_prelevement_extrait){
         System.out.println("date_prelevement_extrait.substring(6,9)="+date_prelevement_extrait.substring(6,10));
         System.out.println("//////");
