@@ -32,10 +32,13 @@ public class DemoApplication {
 		CorsConfiguration config = new CorsConfiguration();
 		config.setAllowCredentials(true);
 		config.setAllowedOrigins(Arrays.asList(
+				"http://localhost:8080",
+				"http://localhost:8081",
 				"http://localhost:4200",
 				"http://localhost:4300",
 				"https://angular-server-pfe-6e7b27eebb55.herokuapp.com",
 				"https://spring-server-pfe-cc201bffbf5c.herokuapp.com"
+				//"*"
 		));
 		config.setAllowedHeaders(Arrays.asList(
 				"Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",

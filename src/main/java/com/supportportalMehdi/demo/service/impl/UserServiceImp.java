@@ -95,6 +95,8 @@ public class UserServiceImp implements UserService, UserDetailsService {
 
     @Override
     public User register(String firstName, String lastName, String username, String email,String phoneNumber, String gender, String password) throws EmailExistException, UsernameExistException, MessagingException {
+        System.out.println("username === "+username);
+        System.out.println("email === "+email);
         validateNewUsernameAndEmail(StringUtils.EMPTY,username,email) ;
         User user = new User() ;
         user.setUserId(generateUserId());
@@ -114,7 +116,8 @@ public class UserServiceImp implements UserService, UserDetailsService {
         user.setGender(gender);
         userRepository.save(user);
         LOGGER.info("New user password "+password);
-        emailService.sendNewPasswordEmail(firstName,password,email);
+
+        //emailService.sendNewPasswordEmail(firstName,password,email);
         return user;
     }
 
