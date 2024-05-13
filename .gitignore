@@ -32,6 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 AppData/Local/
+firebase-config.json
 
 #pour le fihchier de configuration firebase pour l'enregistrement des relevee bancaires
 # Ignorer le fichier de configuration Firebase
