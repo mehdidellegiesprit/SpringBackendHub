@@ -72,7 +72,7 @@ public class UserResource extends ExceptionHandling {
     @CrossOrigin
     @PostMapping("/register")
     public ResponseEntity<User> register(@RequestBody User user) throws UserNotFoundException, EmailExistException, UsernameExistException, MessagingException {
-        System.out.println("register path me!!!! "+user.getPassword());
+        System.out.println("register path me!!!!! "+user.getPassword());
         User newUser = userService.register(user.getFirstName(),user.getLastName(), user.getUsername(), user.getEmail(),user.getPhoneNumber(),user.getGender(),user.getPassword());
         System.out.println(user.getPhoneNumber());
         System.out.println(user.getGender());
